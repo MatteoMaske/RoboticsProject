@@ -276,7 +276,7 @@ def talker(p):
             p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, conf.robot_params[p.robot_name]['q_0'], rate)
 
         ## set joints here
-        #p.q_des = p.q_des_q0  + 0.1 * np.sin(2*np.pi*0.5*p.time)
+        p.q_des = p.q_des_q0  + 0.1 * np.sin(2*np.pi*0.5*p.time)
         ##test gripper
         ##in Simulation remember to set gripper_sim : True in params.yaml!
         if p.time>5.0 and (gripper_on == 0):
