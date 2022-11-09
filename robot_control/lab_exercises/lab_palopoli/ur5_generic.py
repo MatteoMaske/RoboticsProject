@@ -63,7 +63,7 @@ class Ur5Generic(BaseControllerFixed):
         self.gm = GripperManager(self.real_robot, conf.robot_params[self.robot_name]['dt'])
 
         #self.world_name = None # only the workbench
-        self.world_name = 'tavolo.world'
+        self.world_name = 'tavolo_brick.world'
         #self.world_name = 'palopoli.world'
 
         print("Initialized ur5 generic  controller---------------------------------------------------------------")
