@@ -2,6 +2,8 @@
 
 # main
 
+datasetPath = "./dataset/"
+
 if __name__ == '__main__':
     print("Hello")
     # train the yolov5 model
