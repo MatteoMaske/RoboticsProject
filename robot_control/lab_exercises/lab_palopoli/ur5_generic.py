@@ -1,15 +1,14 @@
-# -*- coding: utf-8 -*-
+# -- coding: utf-8 --
 """
 Created on 3 May  2022
 
 @author: mfocchi
 """
 
-from __future__ import print_function
+from _future_ import print_function
+from base_controllers.components.inverse_kinematics.inv_kinematics_pinocchio import robotKinematics
 
 import os
-
-import numpy as np
 import rospy as ros
 import sys
 # messages for topic subscribers
@@ -22,13 +21,15 @@ import rosnode
 import rosgraph
 import rospkg
 
-#other utils
+# other utils
 from base_controllers.utils.math_tools import *
 import pinocchio as pin
-np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
+
+np.set_printoptions(threshold=np.inf, precision=5, linewidth=1000, suppress=True)
 from termcolor import colored
 from base_controllers.utils.common_functions import plotJoint, plotEndeff
-import  params as conf
+import params as conf
+
 robotName = "ur5"
 
 # controller manager management
@@ -39,12 +40,16 @@ from base_controllers.base_controller_fixed import BaseControllerFixed
 import tf
 from rospy import Time
 import time
+
+# imports to use inv_kinematics fun in base_controllers/components/inverse_kinematics/inv_kinematics_pinocchio.py
 from base_controllers.components.gripper_manager import GripperManager
+from base_controllers.utils.common_functions import getRobotModel
+
 
 class Ur5Generic(BaseControllerFixed):
-    
-    def __init__(self, robot_name="ur5"):
-        super().__init__(robot_name=robot_name)
+
+    def _init_(self, robot_name="ur5"):
+        super()._init_(robot_name=robot_name)
         self.real_robot = conf.robot_params[self.robot_name]['real_robot']
         self.homing_flag = True
         if (conf.robot_params[self.robot_name]['control_type'] == "torque"):
@@ -64,9 +69,9 @@ class Ur5Generic(BaseControllerFixed):
             self.gripper = False
         self.gm = GripperManager(self.real_robot, conf.robot_params[self.robot_name]['dt'])
 
-        #self.world_name = None # only the workbench
+        # self.world_name = None # only the workbench
         self.world_name = 'tavolo_brick.world'
-        #self.world_name = 'palopoli.world'
+        # self.world_name = 'palopoli.world'
 
         print("Initialized ur5 generic  controller---------------------------------------------------------------")
 
@@ -122,10 +127,10 @@ class Ur5Generic(BaseControllerFixed):
                                                         Float64MultiArray, queue_size=10)
             self.available_controllers = [
                 "joint_group_pos_controller",
-                "scaled_pos_joint_traj_controller" ]
+                "scaled_pos_joint_traj_controller"]
         else:
             self.available_controllers = ["joint_group_pos_controller",
-                                          "pos_joint_traj_controller" ]
+                                          "pos_joint_traj_controller"]
         self.active_controller = self.available_controllers[0]
 
         self.broadcaster = tf.TransformBroadcaster()
@@ -143,12 +148,12 @@ class Ur5Generic(BaseControllerFixed):
         self.contactMomentW = self.w_R_tool0.dot(contactMomentTool0)
 
     def deregister_node(self):
-        print( "deregistering nodes"     )
+        print("deregistering nodes")
         self.ros_pub.deregister_node()
         if not self.real_robot:
-            os.system(" rosnode kill /"+self.robot_name+"/ros_impedance_controller")
+            os.system(" rosnode kill /" + self.robot_name + "/ros_impedance_controller")
             os.system(" rosnode kill /gzserver /gzclient")
-                                                                                                                                     
+
     def updateKinematicsDynamics(self):
         # q is continuously updated
         # to compute in the base frame  you should put neutral base
@@ -157,46 +162,47 @@ class Ur5Generic(BaseControllerFixed):
         self.M = self.robot.mass(self.q)
         # bias terms
         self.h = self.robot.nle(self.q, self.qd)
-        #gravity terms
+        # gravity terms
         self.g = self.robot.gravity(self.q)
-        #compute ee position  in the world frame
+        # compute ee position  in the world frame
         frame_name = conf.robot_params[self.robot_name]['ee_frame']
         # this is expressed in the base frame
         self.x_ee = self.robot.framePlacement(self.q, self.robot.model.getFrameId(frame_name)).translation
         self.w_R_tool0 = self.robot.framePlacement(self.q, self.robot.model.getFrameId(frame_name)).rotation
         # compute jacobian of the end effector in the base or world frame (they are aligned so in terms of velocity they are the same)
-        self.J6 = self.robot.frameJacobian(self.q, self.robot.model.getFrameId(frame_name), False, pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)                    
-        # take first 3 rows of J6 cause we have a point contact            
-        self.J = self.J6[:3,:] 
+        self.J6 = self.robot.frameJacobian(self.q, self.robot.model.getFrameId(frame_name), False,
+                                           pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)
+        # take first 3 rows of J6 cause we have a point contact
+        self.J = self.J6[:3, :]
         # broadcast base world TF
         self.broadcaster.sendTransform(self.base_offset, (0.0, 0.0, 0.0, 1.0), Time.now(), '/base_link', '/world')
 
-
     def startupProcedure(self):
         if (self.use_torque_control):
-            #set joint pdi gains
-            self.pid.setPDjoints( conf.robot_params[self.robot_name]['kp'], conf.robot_params[self.robot_name]['kd'], np.zeros(self.robot.na))
+            # set joint pdi gains
+            self.pid.setPDjoints(conf.robot_params[self.robot_name]['kp'], conf.robot_params[self.robot_name]['kd'],
+                                 np.zeros(self.robot.na))
         if (self.real_robot):
             self.zero_sensor()
-        self.u.putIntoGlobalParamServer("real_robot",  self.real_robot)
+        self.u.putIntoGlobalParamServer("real_robot", self.real_robot)
         print(colored("finished startup -- starting controller", "red"))
 
     def switch_controller(self, target_controller):
         """Activates the desired controller and stops all others from the predefined list above"""
-        print('Available controllers: ',self.available_controllers)
+        print('Available controllers: ', self.available_controllers)
         print('Controller manager: loading ', target_controller)
 
         other_controllers = (self.available_controllers)
         other_controllers.remove(target_controller)
-        print('Controller manager:Switching off  :  ',other_controllers)
+        print('Controller manager:Switching off  :  ', other_controllers)
 
         srv = LoadControllerRequest()
         srv.name = target_controller
 
-        self.load_controller_srv(srv)  
-        
+        self.load_controller_srv(srv)
+
         srv = SwitchControllerRequest()
-        srv.stop_controllers = other_controllers 
+        srv.stop_controllers = other_controllers
         srv.start_controllers = [target_controller]
         srv.strictness = SwitchControllerRequest.BEST_EFFORT
         self.switch_controller_srv(srv)
@@ -214,26 +220,30 @@ class Ur5Generic(BaseControllerFixed):
     def deregister_node(self):
         super().deregister_node()
         if not self.real_robot:
-            os.system(" rosnode kill /"+self.robot_name+"/ros_impedance_controller")
+            os.system(" rosnode kill /" + self.robot_name + "/ros_impedance_controller")
             os.system(" rosnode kill /gzserver /gzclient")
 
     def plotStuff(self):
         plotJoint('position', 0, self.time_log, self.q_log)
 
-    def homing_procedure(self, dt, v_des, q_home, rate):
+    # inverse kinematics function
+
+    def homing_procedure(self, dt, v_des, q_home,
+                         rate):  # v_des in rad/s desired velocity, Ros.rate in Hz to set publishing rate, dt in s delta time, q_home in rad home position
         v_ref = 0.0
         print(colored("STARTING HOMING PROCEDURE", 'red'))
-        self.q_des = np.copy(self.q)
-        print("Initial joint error = ", np.linalg.norm(self.q_des - q_home))
-        print("q = ", self.q.T)
-        print("Homing v des", v_des)
+        self.q_des = np.copy(self.q)  # set desired position to current position
+        print("Initial joint error = ", np.linalg.norm(self.q_des - q_home))  # print initial error
+        print("q (initial joint position) = ", self.q.T)  # print initial joint positions
+        print("Homing v des", v_des)  # print desired velocity
+
         while True:
-            e = q_home - self.q_des
-            e_norm = np.linalg.norm(e)
-            if (e_norm != 0.0):
+            e = q_home - self.q_des  # compute movement from current position to home position
+            e_norm = np.linalg.norm(e)  # compute error norm
+            if (e_norm != 0.0):  # reduce velocity if error is not zero
                 v_ref += 0.005 * (v_des - v_ref)
                 self.q_des += dt * v_ref * e / e_norm
-                self.send_reduced_des_jstate(self.q_des)
+                self.send_reduced_des_jstate(self.q_des)  # send desired position to robot
             rate.sleep()
             if (e_norm < 0.001):
                 self.homing_flag = False
@@ -242,109 +252,15 @@ class Ur5Generic(BaseControllerFixed):
                     p.gm.move_gripper(100)
                 break
 
-    def numericalInverseKinematics(p_d, q0, line_search=False, wrap=False):
-        math_utils = Math()
-
-        # hyper-parameters
-        epsilon = 1e-06  # Tolerance for stropping criterion
-        lambda_ = 1e-08  # Regularization or damping factor (1e-08->0.01)
-        max_iter = 200  # Maximum number of iterations
-        # For line search only
-        gamma = 0.5
-        beta = 0.5  # Step size reduction
-
-        # initialization of variables
-        iter = 0
-        alpha = 1  # Step size
-        log_grad = []
-        log_err = []
-
-        # Inverse kinematics with line search
-        while True:
-            # evaluate  the kinematics for q0
-            J, _, _, _, _ = computeEndEffectorJacobian(q0)
-            _, _, _, _, T_0e = directKinematics(q0)
-
-            p_e = T_0e[:3, 3]
-            R = T_0e[:3, :3]
-            rpy = math_utils.rot2eul(R)
-            roll = rpy[0]
-            p_e = np.append(p_e, roll)
-
-            # error
-            e_bar = p_e - p_d
-            J_bar = geometric2analyticJacobian(J, T_0e)
-            J_bar = J_bar[:4, :]
-            # evaluate the gradient
-            grad = J_bar.T.dot(e_bar)
-
-            log_grad.append(np.linalg.norm(grad))
-            log_err.append(np.linalg.norm(e_bar))
-
-            if np.linalg.norm(grad) < epsilon:
-                print("IK Convergence achieved!, norm(grad) :", np.linalg.norm(grad))
-                print("Inverse kinematics solved in {} iterations".format(iter))
-                break
-            if iter >= max_iter:
-                print(
-                    "Warning: Max number of iterations reached, the iterative algorithm has not reached convergence to the desired precision. Error is:  ",
-                    np.linalg.norm(e_bar))
-                break
-            # Compute the error
-            JtJ = np.dot(J_bar.T, J_bar) + np.identity(J_bar.shape[1]) * lambda_
-            JtJ_inv = np.linalg.inv(JtJ)
-            P = JtJ_inv.dot(J_bar.T)
-            dq = - P.dot(e_bar)
-
-            if not line_search:
-                q1 = q0 + dq * alpha
-                q0 = q1
-            else:
-                print("Itern # :", iter)
-                # line search loop
-                while True:
-                    # update
-                    q1 = q0 + dq * alpha
-                    # evaluate  the kinematics for q1
-                    _, _, _, _, T_0e1 = directKinematics(q1)
-                    p_e1 = T_0e1[:3, 3]
-                    R1 = T_0e1[:3, :3]
-                    rpy1 = math_utils.rot2eul(R1)
-                    roll1 = rpy1[0]
-                    p_e1 = np.append(p_e1, roll1)
-                    e_bar_new = p_e1 - p_d
-                    # print "e_bar1", np.linalg.norm(e_bar_new), "e_bar", np.linalg.norm(e_bar)
-
-                    error_reduction = np.linalg.norm(e_bar) - np.linalg.norm(e_bar_new)
-                    threshold = 0.0  # more restrictive gamma*alpha*np.linalg.norm(e_bar)
-
-                    if error_reduction < threshold:
-                        alpha = beta * alpha
-                        print(" line search: alpha: ", alpha)
-                    else:
-                        q0 = q1
-                        alpha = 1
-                        break
-
-            iter += 1
-
-        # wrapping prevents from outputs outside the range -2pi, 2pi
-        if wrap:
-            for i in range(len(q0)):
-                while q0[i] >= 2 * math.pi:
-                    q0[i] -= 2 * math.pi
-                while q0[i] < -2 * math.pi:
-                    q0[i] += 2 * math.pi
-
-        return q0, log_err, log_grad
 
 def talker(p):
     p.start()
     if p.real_robot:
         p.startRealRobot()
     else:
-        additional_args = 'gripper:=' + str(p.gripper) # +'gui:=false'
-        p.startSimulator(world_name=p.world_name, use_torque_control=p.use_torque_control, additional_args =additional_args)
+        additional_args = 'gripper:=' + str(p.gripper)  # +'gui:=false'
+        p.startSimulator(world_name=p.world_name, use_torque_control=p.use_torque_control,
+                         additional_args=additional_args)
 
     # specify xacro location
     xacro_path = rospkg.RosPack().get_path('ur_description') + '/urdf/' + p.robot_name + '.urdf.xacro'
@@ -365,29 +281,37 @@ def talker(p):
         p.switch_controller("joint_group_pos_controller")
 
     gripper_on = 0
-    #control loop
+    # control loop
     while not ros.is_shutdown():
         p.updateKinematicsDynamics()
         # homing procedure
 
         if p.homing_flag:
-            p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, conf.robot_params[p.robot_name]['q_0'], rate)
-
-            ##move to brick1
-            #p.numericalInverseKinematics(np.array([0.64, 0.6, 0.925 ]), conf.robot_params[p.robot_name]['q_0'])
-
+            p.homing_procedure(conf.robot_params[p.robot_name]['dt'], .6, conf.robot_params[p.robot_name]['q_0'], rate)
+            ee_pos_des = np.array([0.15, 0.21, -.7])
+            ee_frame = 'tool0'
+            robot_name = 'ur5'
+            robot = getRobotModel(robot_name)
+            kin = robotKinematics(robot, ee_frame)
+            q, ik_success, out_of_workspace = kin.endeffectorInverseKinematicsLineSearch(ee_pos_des, ee_frame,
+                                                                                         conf.robot_params[
+                                                                                             p.robot_name]['q_0'])
+            p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, q, rate)
+            print("q=", q)
+            if (out_of_workspace):
+                print("out of workspace")
         ## set joints here
-        #p.q_des = p.q_des_q0  + 0.1 * np.sin(2*np.pi*0.5*p.time)
+        # p.q_des = p.q_des_q0  + 0.1 * np.sin(2*np.pi*0.5*p.time)
         ##test gripper
         ##in Simulation remember to set gripper_sim : True in params.yaml!
-        if p.time>5.0 and (gripper_on == 0):
-             print("gripper 30")
-             p.gm.move_gripper(30)
-             gripper_on = 1
-        if (gripper_on == 1) and p.time>10.0:
-             print("gripper 100")
-             p.gm.move_gripper(100)
-             gripper_on = 2
+        if p.time > 5.0 and (gripper_on == 0):
+            print("gripper 30")
+            p.gm.move_gripper(30)
+            gripper_on = 1
+        if (gripper_on == 1) and p.time > 10.0:
+            print("gripper 100")
+            p.gm.move_gripper(100)
+            gripper_on = 2
         ##need to uncomment this to be able to send joints references (leave it commented if you have an external node setting them)
         p.send_reduced_des_jstate(p.q_des)
 
@@ -401,11 +325,13 @@ def talker(p):
         p.ros_pub.add_marker(p.x_ee + p.base_offset)
         p.ros_pub.publishVisual()
 
-        #wait for synconization of the control loop
+        # wait for synconization of the control loop
         rate.sleep()
-        p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),  3)  # to avoid issues of dt 0.0009999
+        p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),
+                          3)  # to avoid issues of dt 0.0009999
 
-if __name__ == '__main__':
+
+if _name_ == '_main_':
 
     p = Ur5Generic(robotName)
 
@@ -414,8 +340,5 @@ if __name__ == '__main__':
     except (ros.ROSInterruptException, ros.service.ServiceException):
         ros.signal_shutdown("killed")
         p.deregister_node()
-        if   conf.plotting:
+        if conf.plotting:
             p.plotStuff()
-
-    
-        
