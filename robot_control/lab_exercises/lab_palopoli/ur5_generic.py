@@ -320,6 +320,8 @@ def talker(p):
         rate.sleep()
         p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),  3)  # to avoid issues of dt 0.0009999
 
+        print("Dio boia")
+
 if __name__ == '__main__':
 
     p = Ur5Generic(robotName)
