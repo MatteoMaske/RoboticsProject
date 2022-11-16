@@ -37,25 +37,26 @@ void fwKin(int A[3], float Th[3]){
     Eigen::MatrixXf A10(4,4);
     Eigen::MatrixXf A21(4,4);
     Eigen::MatrixXf A32(4,4);
+    Eigen::MatrixXf A30(4,4);
 
-    float A10[4][4] = {{cos(Th[0]), 0, sin(Th[0]), 0},
-                       {sin(Th[0]), 0, -cos(Th[0]), 0},
-                       {0, 1, 0, 0},
-                       {0, 0, 0, 1}};
+    A10 << cos(Th[0]), 0, sin(Th[0]), 0,
+            sin(Th[0]), 0, -cos(Th[0]), 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1;
 
-    float A21[4][4] = { {cos(Th[1]), -sin(Th[1]), 0, A[1]*cos(Th[1])},
-                        {sin(Th[1]), cos(Th[1]), 0, A[1]*sin(Th[1])},
-                        {0, 0, 1, 0},
-                        {0, 0, 0, 1}};
+    A21 << cos(Th[1]), -sin(Th[1]), 0, A[1]*cos(Th[1]),
+            sin(Th[1]), cos(Th[1]), 0, A[1]*sin(Th[1]),
+            0, 0, 1, 0,
+            0, 0, 0, 1;
 
-    float A32[4][4] = { {cos(Th[2]), -sin(Th[2]), 0, A[2]*cos(Th[2])},
-                        {sin(Th[2]), cos(Th[2]), 0, A[2]*sin(Th[2])},
-                        {0, 0, 1, 0},
-                        {0, 0, 0, 1}};
+    A32 << cos(Th[2]), -sin(Th[2]), 0, A[2]*cos(Th[2]),
+            sin(Th[2]), cos(Th[2]), 0, A[2]*sin(Th[2]),
+            0, 0, 1, 0,
+            0, 0, 0, 1;
 
-    Eigen::Matrix4d mat;
+    A30 = A10*A21*A32;
 
-    //mat = A10*A21;
+    cout << A30 << endl;
     
     // for(int i=0; i<4; i++){
     //     for(int j=0; j<4; j++){
