@@ -6,6 +6,7 @@ Created on 3 May  2022
 """
 
 from __future__ import print_function
+from base_controllers.components.inverse_kinematics.inv_kinematics_pinocchio import robotKinematics
 
 import os
 import rospy as ros
@@ -37,7 +38,10 @@ from base_controllers.base_controller_fixed import BaseControllerFixed
 import tf
 from rospy import Time
 import time
+
+#imports to use inv_kinematics fun in base_controllers/components/inverse_kinematics/inv_kinematics_pinocchio.py
 from base_controllers.components.gripper_manager import GripperManager
+from base_controllers.utils.common_functions import getRobotModel
 
 class Ur5Generic(BaseControllerFixed):
     
@@ -63,7 +67,7 @@ class Ur5Generic(BaseControllerFixed):
         self.gm = GripperManager(self.real_robot, conf.robot_params[self.robot_name]['dt'])
 
         #self.world_name = None # only the workbench
-        self.world_name = 'tavolo.world'
+        self.world_name = 'tavolo_brick.world'
         #self.world_name = 'palopoli.world'
 
         print("Initialized ur5 generic  controller---------------------------------------------------------------")
@@ -218,20 +222,23 @@ class Ur5Generic(BaseControllerFixed):
     def plotStuff(self):
         plotJoint('position', 0, self.time_log, self.q_log)
 
-    def homing_procedure(self, dt, v_des, q_home, rate):
+    #inverse kinematics function
+
+    def homing_procedure(self, dt, v_des, q_home, rate): #v_des in rad/s desired velocity, Ros.rate in Hz to set publishing rate, dt in s delta time, q_home in rad home position
         v_ref = 0.0
         print(colored("STARTING HOMING PROCEDURE", 'red'))
-        self.q_des = np.copy(self.q)
-        print("Initial joint error = ", np.linalg.norm(self.q_des - q_home))
-        print("q = ", self.q.T)
-        print("Homing v des", v_des)
+        self.q_des = np.copy(self.q)  # set desired position to current position
+        print("Initial joint error = ", np.linalg.norm(self.q_des - q_home)) # print initial error
+        print("q (initial joint position) = ", self.q.T) # print initial joint positions
+        print("Homing v des", v_des) # print desired velocity
+
         while True:
-            e = q_home - self.q_des
-            e_norm = np.linalg.norm(e)
-            if (e_norm != 0.0):
+            e = q_home - self.q_des # compute movement from current position to home position
+            e_norm = np.linalg.norm(e) # compute error norm
+            if (e_norm != 0.0): #reduce velocity if error is not zero
                 v_ref += 0.005 * (v_des - v_ref)
                 self.q_des += dt * v_ref * e / e_norm
-                self.send_reduced_des_jstate(self.q_des)
+                self.send_reduced_des_jstate(self.q_des) # send desired position to robot
             rate.sleep()
             if (e_norm < 0.001):
                 self.homing_flag = False
@@ -273,8 +280,17 @@ def talker(p):
         # homing procedure
 
         if p.homing_flag:
-            p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, conf.robot_params[p.robot_name]['q_0'], rate)
-
+            p.homing_procedure(conf.robot_params[p.robot_name]['dt'], .6, conf.robot_params[p.robot_name]['q_0'], rate)
+            ee_pos_des = np.array([0.15, 0.21, -.7])
+            ee_frame = 'tool0'
+            robot_name = 'ur5'
+            robot = getRobotModel(robot_name)
+            kin = robotKinematics(robot, ee_frame)
+            q, ik_success, out_of_workspace = kin.endeffectorInverseKinematicsLineSearch(ee_pos_des,ee_frame, conf.robot_params[p.robot_name]['q_0'])
+            p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, q, rate)
+            print("q=", q)
+            if(out_of_workspace):
+                print("out of workspace")
         ## set joints here
         #p.q_des = p.q_des_q0  + 0.1 * np.sin(2*np.pi*0.5*p.time)
         ##test gripper
@@ -303,6 +319,7 @@ def talker(p):
         #wait for synconization of the control loop
         rate.sleep()
         p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),  3)  # to avoid issues of dt 0.0009999
+
 
 if __name__ == '__main__':
 
