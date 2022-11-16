@@ -262,7 +262,7 @@ def talker(p):
     p.startupProcedure()
     # sleep to avoid that the robot crashes on the table
     time.sleep(3.)
-
+    os.system("rostopic echo /ur5/joint_group_pos_controller/command")
     # loop frequency
     rate = ros.Rate(1 / conf.robot_params[p.robot_name]['dt'])
 
