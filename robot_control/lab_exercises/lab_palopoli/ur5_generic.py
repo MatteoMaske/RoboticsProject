@@ -262,7 +262,7 @@ def talker(p):
     p.startupProcedure()
     # sleep to avoid that the robot crashes on the table
     time.sleep(3.)
-
+    os.system("rostopic echo /ur5/joint_group_pos_controller/command")
     # loop frequency
     rate = ros.Rate(1 / conf.robot_params[p.robot_name]['dt'])
 
@@ -281,7 +281,7 @@ def talker(p):
 
         if p.homing_flag:
             p.homing_procedure(conf.robot_params[p.robot_name]['dt'], .6, conf.robot_params[p.robot_name]['q_0'], rate)
-            ee_pos_des = np.array([0.15, 0.21, -.7])
+            ee_pos_des = np.array([0.3, 0.25, .7])
             ee_frame = 'tool0'
             robot_name = 'ur5'
             robot = getRobotModel(robot_name)
@@ -319,7 +319,6 @@ def talker(p):
         #wait for synconization of the control loop
         rate.sleep()
         p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),  3)  # to avoid issues of dt 0.0009999
-
 
 if __name__ == '__main__':
 
