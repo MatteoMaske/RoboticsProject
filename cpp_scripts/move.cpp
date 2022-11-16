@@ -8,7 +8,17 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <eigen.h>
+
+using namespace ros;
+
+struct joint{
+    double link_length;
+    double joint_angle;
+};
+
+struct anthropomorphic_arm{
+    std::vector<double> joint_angles;
+};
 
 int main(){
 
@@ -22,5 +32,9 @@ void inverseKinematics(){
 }
 
 void forwardKinematics(){
+
+}
+
+void anthropomorphicTrans(){
 
 }
