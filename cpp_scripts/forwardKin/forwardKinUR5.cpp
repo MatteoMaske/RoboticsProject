@@ -1,13 +1,4 @@
 #include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-#include <unistd.h>
-#include <sys/time.h>
 #include <Eigen>
 
 using namespace std;
