@@ -12,32 +12,38 @@
 
 using namespace std;
 
-//#define pi 3.14159265358979323846
+using Eigen::MatrixXf;
+using Eigen::VectorXf;
 
 struct robotParams{
     int A[3] = {3, 3, 3};
     float Th[3] = {M_PI_4, M_PI_2, M_PI/3};
 } robotParams;
 
-void fwKin(int A[3], float Th[3]); // This function will calculate the forward kinematics of the robot and return the position of the end effector
+void fwKin(int A[3], float Th[3], float endEffectorPos[3]); // This function will calculate the forward kinematics of the robot and return the position of the end effector
 
 
 int main(int argc, char** argv){
 
-    fwKin(robotParams.A, robotParams.Th);
+    float endEffectorPos[3] = {0, 0, 0}; // This will be the position of the end effector
+
+    fwKin(robotParams.A, robotParams.Th, endEffectorPos);
+
+    cout << "The end effector is at: " << endEffectorPos[0] << ", " << endEffectorPos[1] << ", " << endEffectorPos[2] << endl;
 
     return 0;
 }
 
-void fwKin(int A[3], float Th[3]){
+void fwKin(int A[3], float Th[3], float endEffectorPos[3]){
     // This function will calculate the forward kinematics of the robot and return the position of the end effector
     // The inputs are the link lengths and the joint angles
     // The output is the position of the end effector
 
-    Eigen::MatrixXf A10(4,4);
-    Eigen::MatrixXf A21(4,4);
-    Eigen::MatrixXf A32(4,4);
-    Eigen::MatrixXf A30(4,4);
+    MatrixXf A10(4,4);
+    MatrixXf A21(4,4);
+    MatrixXf A32(4,4);
+    MatrixXf A30(4,4);
+    MatrixXf Oe(1,4);
 
     A10 << cos(Th[0]), 0, sin(Th[0]), 0,
             sin(Th[0]), 0, -cos(Th[0]), 0,
@@ -56,12 +62,15 @@ void fwKin(int A[3], float Th[3]){
 
     A30 = A10*A21*A32;
 
-    cout << A30 << endl;
-    
-    // for(int i=0; i<4; i++){
-    //     for(int j=0; j<4; j++){
-    //         cout << A30[i][j] << " ";
-    //     }
-    //     cout << endl;
-    // }
+    VectorXf v(4);
+    v << 0, 0, 0, 1;
+
+    Oe = A30*v;
+    Oe.conservativeResize(3,1);
+
+    //cout << Oe << endl;
+
+    endEffectorPos[0] = Oe(0);
+    endEffectorPos[1] = Oe(1);
+    endEffectorPos[2] = Oe(2);
 }
