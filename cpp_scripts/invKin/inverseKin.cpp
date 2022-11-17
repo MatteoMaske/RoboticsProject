@@ -1,23 +1,18 @@
 #include <iostream>
-#include <cstdlib>
-#include <cmath>
-#include <vector>
-#include <string>
+#include <Eigen>
 
 using namespace std;
+using Eigen::MatrixXf;
 
 struct robotParams{
-    float armLenght[3];
-    float wristPos[3];
+    float armLenght[6]= {0, -0.425, -0.3922, 0, 0, 0};
+    float wristPos[3] = {0.1978, -0.6579, 0.2324};
 }robotParams;
 
 void inverseKin(float *, float *);
 
 int main(int argc, char** argv){
 
-    robotParams.armLenght[0] = 0.5;
-    robotParams.armLenght[1] = 0.5;
-    robotParams.armLenght[2] = 0.5;
 
     robotParams.wristPos[0] = 0.5;
     robotParams.wristPos[1] = 0.5;
@@ -53,11 +48,12 @@ void inverseKin(float * armLenght, float * wristPos){
     th32 = -th31;
 
 
-    th21 = atan2((a1+a2*cos3)*wpz-a2*sin3*sqrt(pow(wpx,2)+pow(wpy,2)), (a1+a2*cos3)*sqrt(pow(wpx,2)+pow(wpy,2)+a2*sin3*wpx));
-    /* th22 = atan2((a1+a2*cos3)*wpz+a2*sin3*sqrt(wpx^2+wpy^2), -(a1+a2*cos3)*sqrt(wpx^2+wpy^2)+a2*sin3*wpz);
+    /* th21 = atan2((a1+a2*cos3)*wpz-a2*sin3*sqrt(pow(wpx,2)+pow(wpy,2)), (a1+a2*cos3)*sqrt(pow(wpx,2)+pow(wpy,2)+a2*sin3*wpx));
+    th22 = atan2((a1+a2*cos3)*wpz+a2*sin3*sqrt(pow(wpx,2)+pow(wpy,2)), -(a1+a2*cos3)*sqrt(pow(wpx,2)+pow(wpy,2)+a2*sin3*wpx));
+    th22 = atan2((a1+a2*cos3)*wpz+a2*sin3*sqrt(wpx^2+wpy^2), -(a1+a2*cos3)*sqrt(wpx^2+wpy^2)+a2*sin3*wpz);
     th23 = atan2((a1+a2*cos3)*wpz-a2*-sin3*sqrt(wpx^2+wpy^2), (a1+a2*cos3)*sqrt(wpx^2+wpy^2)+a2*-sin3*wpz);
     th24 = atan2((a1+a2*cos3)*wpz+a2*-sin3*sqrt(wpx^2+wpy^2), -(a1+a2*cos3)*sqrt(wpx^2+wpy^2)+a2*sin3*wpz);
- */
+  */
     th11 = atan2(wpy, wpx);
     th12 = atan2(-wpy, -wpx);
 
