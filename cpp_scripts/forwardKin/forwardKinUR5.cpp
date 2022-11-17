@@ -3,7 +3,6 @@
 
 using namespace std;
 using Eigen::MatrixXf;
-using Eigen::VectorXf;
 
 #define scaleFactor 10
 
@@ -81,7 +80,6 @@ void fwKin(struct robotParams, float endEffectorPos[3]){
     A60 = A10*A21*A32*A43*A54*A65;
 
     Pe = A60.block(0,3,3,1);
-    
     Re = A60.block(0,0,3,3);
 
     // cout << Pe << endl;
