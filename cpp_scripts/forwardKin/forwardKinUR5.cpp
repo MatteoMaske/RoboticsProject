@@ -4,37 +4,24 @@
 using namespace std;
 using Eigen::MatrixXf;
 
-#define scaleFactor 10
+const float A[6] = {0, -0.425, -0.3922, 0, 0, 0};
+const float D[6] = {0.1625, 0, 0, 0.1333, 0.0997, 0.0996};
 
-struct robotParams{
-    float A[6] = {0, -0.425, -0.3922, 0, 0, 0};
-    float D[6] = {0.1625, 0, 0, 0.1333, 0.0997, 0.0996};
-    float Th[6] = {0,0,0,0,0,0};
-} robotParams;
-
-void fwKin(struct robotParams, float endEffectorPos[3]); // This function will calculate the forward kinematics of the robot and return the position of the end effector
+void fwKin(float Th[6], float endEffectorPos[3]); // This function will calculate the forward kinematics of the robot and return the position of the end effector
 
 int main(int argc, char** argv){
 
+    float Th[6] = {1.6, 0.2, -0.5, 2.89, 1.1, 1.25};
     float endEffectorPos[3] = {0, 0, 0}; // This will be the position of the end effector
 
-    for(int i=0; i<6; i++){
-        robotParams.A[i] *= scaleFactor;
-        robotParams.D[i] *= scaleFactor;
-    }
-
-    fwKin(robotParams, endEffectorPos);
+    fwKin(Th, endEffectorPos);
 
     cout << "The end effector is at: " << endEffectorPos[0] << ", " << endEffectorPos[1] << ", " << endEffectorPos[2] << endl;
 
     return 0;
 }
 
-void fwKin(struct robotParams, float endEffectorPos[3]){
-    
-    float A[6] = {robotParams.A[0], robotParams.A[1], robotParams.A[2], robotParams.A[3], robotParams.A[4], robotParams.A[5]};
-    float D[6] = {robotParams.D[0], robotParams.D[1], robotParams.D[2], robotParams.D[3], robotParams.D[4], robotParams.D[5]};
-    float Th[6] = {robotParams.Th[0], robotParams.Th[1], robotParams.Th[2], robotParams.Th[3], robotParams.Th[4], robotParams.Th[5]};
+void fwKin(float Th[6], float endEffectorPos[3]){
 
     MatrixXf A10(4,4);
     MatrixXf A21(4,4);
@@ -82,8 +69,8 @@ void fwKin(struct robotParams, float endEffectorPos[3]){
     Pe = A60.block(0,3,3,1);
     Re = A60.block(0,0,3,3);
 
-    // cout << Pe << endl;
-    // cout << Re << endl;
+    //cout << Pe << endl;
+    //cout << Re << endl;
 
     endEffectorPos[0] = Pe(0,0);
     endEffectorPos[1] = Pe(1,0);
