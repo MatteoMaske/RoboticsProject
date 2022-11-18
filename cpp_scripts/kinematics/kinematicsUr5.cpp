@@ -1,105 +1,125 @@
 #include <iostream>
 #include <Eigen>
 #include <cmath>
+#include <iomanip>
 
 using namespace std;
 using Eigen::MatrixXf;
-using Eigen::Vector4d;
 
 //distance vectors
 const float A[6] = {0, -0.425, -0.3922, 0, 0, 0};
 const float D[6] = {0.1625, 0, 0, 0.1333, 0.0997, 0.0996};
 
-MatrixXf Re(3,3);
+struct EndEffector{
+    MatrixXf Pe;
+    MatrixXf Re;
+};
 
-//rotation matrix for each joint
-MatrixXf A10(4,4);
-MatrixXf A21(4, 4);
-MatrixXf A32(4, 4);
-MatrixXf A43(4, 4);
-MatrixXf A54(4, 4);
-MatrixXf A65(4, 4);
-MatrixXf A60(4, 4);
-
-void fwKin(float Th[6], float endEffectorPos[3]); // This function will calculate the forward kinematics of the robot and return the position of the end effector
-void invKin(float endEffectorPos[3]); // This function will calculate the inverse kinematics of the robot and return the joint angles
+EndEffector fwKin(MatrixXf Th); // This function will calculate the forward kinematics of the robot and return the position of the end effector
+MatrixXf invKin(EndEffector endEffector); // This function will calculate the inverse kinematics of the robot and return the joint angles
 
 //calculates rotation matrix for each joint
-void calcA10(float th0);
-void calcA21(float th1);
-void calcA32(float th2);
-void calcA43(float th3);
-void calcA54(float th4);
-void calcA65(float th5);
+MatrixXf calcA10(float th0);
+MatrixXf calcA21(float th1);
+MatrixXf calcA32(float th2);
+MatrixXf calcA43(float th3);
+MatrixXf calcA54(float th4);
+MatrixXf calcA65(float th5);
 
 int main(int argc, char** argv){
+    cout.setf(ios::fixed);
 
-    float Th[6] = {1.6, 0.2, -0.5, 2.89, 1.1, 1.25};
-    float endEffectorPos[3] = {0, 0, 0}; //postion of end effector
+    //float Th[6] = {1.6, 0.2, -0.5, 2.89, 1.1, 1.25};
+    MatrixXf Th(1,6); Th << 1.6, 0.2, -0.5, 2.89, 1.1, 1.25;
+    MatrixXf ThInv(8,6);
+    EndEffector endEffector; EndEffector endEffector1;
 
-    fwKin(Th, endEffectorPos);
+    endEffector = fwKin(Th); //calculates forward kinematics
+    ThInv = invKin(endEffector); //calculates inverse kinematics
 
-    invKin(endEffectorPos);
+    //cout << "The end effector is at: " << endEffector.Pe(0) << ", " << endEffector.Pe(1) << ", " << endEffector.Pe(2) << endl;
 
-    cout << "The end effector is at: " << endEffectorPos[0] << ", " << endEffectorPos[1] << ", " << endEffectorPos[2] << endl;
+    for(int i=0; i<8; i++){
+        endEffector1 = fwKin(ThInv.row(i));
+        cout << "pe[" << i << "]: " << setprecision(2) << (endEffector1.Pe - endEffector.Pe) << ", Re[" << i << "]: " << setprecision(6) << (endEffector1.Re - endEffector.Re) << endl;
+    }
 
     return 0;
 }
 
-void calcA10(float Th0){
+MatrixXf calcA10(float Th0){
+    MatrixXf A10(4,4);
+
     A10 <<  cos(Th0), -sin(Th0), 0, 0,
             sin(Th0), cos(Th0), 0, 0,
             0, 0, 1, D[0],
             0, 0, 0, 1;
+
+    return A10;
 }
 
-void calcA21(float Th1){
+MatrixXf calcA21(float Th1){
+    MatrixXf A21(4,4);
+
     A21 <<  cos(Th1), -sin(Th1), 0, 0,
             0, 0, -1, 0,
             sin(Th1), cos(Th1), 0, 0,
             0, 0, 0, 1;
+
+    return A21;
 }
 
-void calcA32(float Th2){
+MatrixXf calcA32(float Th2){
+    MatrixXf A32(4,4);
+
     A32 <<  cos(Th2), -sin(Th2), 0, A[1],
             sin(Th2), cos(Th2), 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1;
+
+    return A32;
 }
 
-void calcA43(float Th3){
+MatrixXf calcA43(float Th3){
+    MatrixXf A43(4,4);
+
     A43 <<  cos(Th3), -sin(Th3), 0, A[2],
             sin(Th3), cos(Th3), 0, 0,
             0, 0, 1, D[3],
             0, 0, 0, 1;
+
+    return A43;
 }
 
-void calcA54(float Th4){
+MatrixXf calcA54(float Th4){
+    MatrixXf A54(4,4);
+
     A54 <<  cos(Th4), -sin(Th4), 0, 0,
             0, 0, -1, -D[4],
             sin(Th4), cos(Th4), 0, 0,
             0, 0, 0, 1;
+
+    return A54;
 }
 
-void calcA65(float Th5){
+MatrixXf calcA65(float Th5){
+    MatrixXf A65(4,4);
+
     A65 <<  cos(Th5), -sin(Th5), 0, 0,
             0, 0, 1, D[5],
             -sin(Th5), -cos(Th5), 0, 0,
             0, 0, 0, 1;
+
+    return A65;
 }
 
-void fwKin(float Th[6], float endEffectorPos[3]){
+EndEffector fwKin(MatrixXf Th){
 
+    MatrixXf A60(4, 4);
+    MatrixXf Re(4,4);
     MatrixXf Pe(1,4);
 
-    calcA10(Th[0]);
-    calcA21(Th[1]);
-    calcA32(Th[2]);
-    calcA43(Th[3]);
-    calcA54(Th[4]);
-    calcA65(Th[5]);
-
-    A60 = A10*A21*A32*A43*A54*A65;
+    A60 = calcA10(Th(0)) * calcA21(Th(1)) * calcA32(Th(2)) * calcA43(Th(3)) * calcA54(Th(4)) * calcA65(Th(5));
 
     Pe = A60.block(0,3,3,1);
     Re = A60.block(0,0,3,3);
@@ -107,14 +127,18 @@ void fwKin(float Th[6], float endEffectorPos[3]){
     //cout << Pe << endl;
     //cout << Re << endl;
 
-    endEffectorPos[0] = Pe(0, 0);
-    endEffectorPos[1] = Pe(1, 0);
-    endEffectorPos[2] = Pe(2, 0);
+    EndEffector endEffector;
+    endEffector.Pe = Pe;
+    endEffector.Re = Re;
+
+    return endEffector;
 }
 
-void invKin(float endEffectorPos[3]){
+MatrixXf invKin(EndEffector endEffector){
 
+    MatrixXf Re = endEffector.Re;
     MatrixXf T60(4, 4);
+    float endEffectorPos[3] = {endEffector.Pe(0), endEffector.Pe(1), endEffector.Pe(2)};
 
     T60 << Re(0, 0), Re(0, 1), Re(0, 2), endEffectorPos[0],
         Re(1, 0), Re(1, 1), Re(1, 2), endEffectorPos[1],
@@ -160,23 +184,22 @@ void invKin(float endEffectorPos[3]){
     MatrixXf p41_3(1, 4);
     MatrixXf p41_4(1, 4);
 
-    calcA10(th1_1); calcA65(th6_1); calcA54(th5_1);
-    T41m = A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    //------------------------
+    //cout << calcA10(th1_1) << endl;
+
+    T41m = calcA10(th1_1).inverse() * T60 * calcA65(th6_1).inverse() * calcA54(th5_1).inverse();
     p41_1 = T41m.block(0, 3, 3, 1);
     float p41xz_1 = hypot(p41_1(0), p41_1(2));
 
-    calcA10(th1_1); calcA65(th6_2); calcA54(th5_2);
-    T41m = A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T41m = calcA10(th1_1).inverse() * T60 * calcA65(th6_2).inverse() * calcA54(th5_2).inverse();
     p41_2 = T41m.block(0, 3, 3, 1);
     float p41xz_2 = hypot(p41_2(0), p41_2(2));
 
-    calcA10(th1_2); calcA65(th6_3); calcA54(th5_3);
-    T41m = A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T41m = calcA10(th1_2).inverse() * T60 * calcA65(th6_3).inverse() * calcA54(th5_3).inverse();
     p41_3 = T41m.block(0, 3, 3, 1);
     float p41xz_3 = hypot(p41_3(0), p41_3(2));
 
-    calcA10(th1_2); calcA65(th6_4); calcA54(th5_4);
-    T41m = A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T41m = calcA10(th1_2).inverse() * T60 * calcA65(th6_4).inverse() * calcA54(th5_4).inverse();
     p41_4 = T41m.block(0, 3, 3, 1);
     float p41xz_4 = hypot(p41_4(0), p41_4(2));
 
@@ -206,43 +229,35 @@ void invKin(float endEffectorPos[3]){
     MatrixXf T43m(4,4);
     MatrixXf Xhat43(1,4);
 
-    calcA32(th3_1); calcA21(th2_1); calcA10(th1_1); calcA65(th6_1); calcA54(th5_1);
-    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T43m = calcA32(th3_1).inverse() * calcA21(th2_1).inverse() * calcA10(th1_1).inverse() * T60 * calcA65(th6_1).inverse() * calcA54(th5_1).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_1 = atan2(Xhat43(1), Xhat43(0));
 
-    calcA32(th3_2); calcA21(th2_2); calcA10(th1_1); calcA65(th6_2); calcA54(th5_2);
-    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T43m = calcA32(th3_2).inverse() * calcA21(th2_2).inverse() * calcA10(th1_1).inverse() * T60 * calcA65(th6_2).inverse() * calcA54(th5_2).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_2 = atan2(Xhat43(1), Xhat43(0));
 
-    calcA32(th3_3); calcA21(th2_3); calcA10(th1_2); calcA65(th6_3); calcA54(th5_3);
-    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T43m = calcA32(th3_3).inverse() * calcA21(th2_3).inverse() * calcA10(th1_2).inverse() * T60 * calcA65(th6_3).inverse() * calcA54(th5_3).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_3 = atan2(Xhat43(1), Xhat43(0));
 
-    calcA32(th3_4); calcA21(th2_4); calcA10(th1_2); calcA65(th6_4); calcA54(th5_4);
-    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T43m = calcA32(th3_4).inverse() * calcA21(th2_4).inverse() * calcA10(th1_2).inverse() * T60 * calcA65(th6_4).inverse() * calcA54(th5_4).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_4 = atan2(Xhat43(1), Xhat43(0));
 
-    calcA32(th3_5); calcA21(th2_5); calcA10(th1_1); calcA65(th6_1); calcA54(th5_1);
-    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T43m = calcA32(th3_5).inverse() * calcA21(th2_5).inverse() * calcA10(th1_1).inverse() * T60 * calcA65(th6_1).inverse() * calcA54(th5_1).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_5 = atan2(Xhat43(1), Xhat43(0));
 
-    calcA32(th3_6); calcA21(th2_6); calcA10(th1_1); calcA65(th6_2); calcA54(th5_2);
-    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T43m = calcA32(th3_6).inverse() * calcA21(th2_6).inverse() * calcA10(th1_1).inverse() * T60 * calcA65(th6_2).inverse() * calcA54(th5_2).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_6 = atan2(Xhat43(1), Xhat43(0));
 
-    calcA32(th3_7); calcA21(th2_7); calcA10(th1_2); calcA65(th6_3); calcA54(th5_3);
-    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T43m = calcA32(th3_7).inverse() * calcA21(th2_7).inverse() * calcA10(th1_2).inverse() * T60 * calcA65(th6_3).inverse() * calcA54(th5_3).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_7 = atan2(Xhat43(1), Xhat43(0));
 
-    calcA32(th3_8); calcA21(th2_8); calcA10(th1_2); calcA65(th6_4); calcA54(th5_4);
-    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    T43m = calcA32(th3_8).inverse() * calcA21(th2_8).inverse() * calcA10(th1_2).inverse() * T60 * calcA65(th6_4).inverse() * calcA54(th5_4).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_8 = atan2(Xhat43(1), Xhat43(0));
 
@@ -259,4 +274,6 @@ void invKin(float endEffectorPos[3]){
           th1_2, th2_8, th3_8, th4_8, th5_4, th6_4;
 
     //cout << Th << endl;
+
+    return Th;
 }
