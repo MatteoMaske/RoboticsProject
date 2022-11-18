@@ -35,7 +35,7 @@ void calcA65(float th5);
 int main(int argc, char** argv){
 
     float Th[6] = {1.6, 0.2, -0.5, 2.89, 1.1, 1.25};
-    float endEffectorPos[3] = {0, 0, 0}; // This will be the position of the end effector
+    float endEffectorPos[3] = {0, 0, 0}; //postion of end effector
 
     fwKin(Th, endEffectorPos);
 
