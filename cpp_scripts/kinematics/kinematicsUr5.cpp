@@ -41,7 +41,7 @@ int main(int argc, char** argv){
 
     invKin(endEffectorPos);
 
-    //cout << "The end effector is at: " << endEffectorPos[0] << ", " << endEffectorPos[1] << ", " << endEffectorPos[2] << endl;
+    cout << "The end effector is at: " << endEffectorPos[0] << ", " << endEffectorPos[1] << ", " << endEffectorPos[2] << endl;
 
     return 0;
 }
@@ -121,7 +121,7 @@ void invKin(float endEffectorPos[3]){
         Re(2, 0), Re(2, 1), Re(2, 2), endEffectorPos[2],
         0, 0, 0, 1;
 
-    // finding th1
+    //Computation values for th1
     MatrixXf p50(1, 4);
     MatrixXf temp(4, 1);
     temp << 0, 0, -D[5], 1;
@@ -130,11 +130,13 @@ void invKin(float endEffectorPos[3]){
     float th1_1 = atan2(p50(1, 0), p50(0, 0)) + acos(D[3] / hypot(p50(1, 0), p50(0, 0))) + M_PI_2;
     float th1_2 = atan2(p50(1, 0), p50(0, 0)) - acos(D[3] / hypot(p50(1, 0), p50(0, 0))) + M_PI_2;
 
+    //Computation values for th5
     float th5_1 = acos((endEffectorPos[0] * sin(th1_1) - endEffectorPos[1] * cos(th1_1) - D[3]) / D[5]);
     float th5_2 = -acos((endEffectorPos[0] * sin(th1_1) - endEffectorPos[1] * cos(th1_1) - D[3]) / D[5]);
     float th5_3 = acos((endEffectorPos[0] * sin(th1_2) - endEffectorPos[1] * cos(th1_2) - D[3]) / D[5]);
     float th5_4 = -acos((endEffectorPos[0] * sin(th1_2) - endEffectorPos[1] * cos(th1_2) - D[3]) / D[5]);
 
+    //Computation values for th6
     // related to th11 a th51
     MatrixXf T06(4, 4);
     MatrixXf Xhat(3, 1);
@@ -189,7 +191,7 @@ void invKin(float endEffectorPos[3]){
     float th3_7 = -th3_3;
     float th3_8 = -th3_4;
 
-    //Computation of eight possible value for th2
+    //Computation of the 8 possible value for th2
     float th2_1 = atan2(-p41_1(2), -p41_1(0)) - asin((-A[2] * sin(th3_1)) / p41xz_1);
     float th2_2 = atan2(-p41_2(2), -p41_2(0)) - asin((-A[2] * sin(th3_2)) / p41xz_2);
     float th2_3 = atan2(-p41_3(2), -p41_3(0)) - asin((-A[2] * sin(th3_3)) / p41xz_3);
@@ -200,5 +202,61 @@ void invKin(float endEffectorPos[3]){
     float th2_7 = atan2(-p41_3(2), -p41_3(0)) - asin((A[2] * sin(th3_3)) / p41xz_3);
     float th2_8 = atan2(-p41_4(2), -p41_4(0)) - asin((A[2] * sin(th3_4)) / p41xz_4);
 
-    //riga 119 matlab
+    //Computation of the 8 possible value for th4
+    MatrixXf T43m(4,4);
+    MatrixXf Xhat43(1,4);
+
+    calcA32(th3_1); calcA21(th2_1); calcA10(th1_1); calcA65(th6_1); calcA54(th5_1);
+    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    Xhat43 = T43m.block(0, 0, 3, 1);
+    float th4_1 = atan2(Xhat43(1), Xhat43(0));
+
+    calcA32(th3_2); calcA21(th2_2); calcA10(th1_1); calcA65(th6_2); calcA54(th5_2);
+    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    Xhat43 = T43m.block(0, 0, 3, 1);
+    float th4_2 = atan2(Xhat43(1), Xhat43(0));
+
+    calcA32(th3_3); calcA21(th2_3); calcA10(th1_2); calcA65(th6_3); calcA54(th5_3);
+    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    Xhat43 = T43m.block(0, 0, 3, 1);
+    float th4_3 = atan2(Xhat43(1), Xhat43(0));
+
+    calcA32(th3_4); calcA21(th2_4); calcA10(th1_2); calcA65(th6_4); calcA54(th5_4);
+    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    Xhat43 = T43m.block(0, 0, 3, 1);
+    float th4_4 = atan2(Xhat43(1), Xhat43(0));
+
+    calcA32(th3_5); calcA21(th2_5); calcA10(th1_1); calcA65(th6_1); calcA54(th5_1);
+    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    Xhat43 = T43m.block(0, 0, 3, 1);
+    float th4_5 = atan2(Xhat43(1), Xhat43(0));
+
+    calcA32(th3_6); calcA21(th2_6); calcA10(th1_1); calcA65(th6_2); calcA54(th5_2);
+    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    Xhat43 = T43m.block(0, 0, 3, 1);
+    float th4_6 = atan2(Xhat43(1), Xhat43(0));
+
+    calcA32(th3_7); calcA21(th2_7); calcA10(th1_2); calcA65(th6_3); calcA54(th5_3);
+    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    Xhat43 = T43m.block(0, 0, 3, 1);
+    float th4_7 = atan2(Xhat43(1), Xhat43(0));
+
+    calcA32(th3_8); calcA21(th2_8); calcA10(th1_2); calcA65(th6_4); calcA54(th5_4);
+    T43m = A32.inverse() * A21.inverse() * A10.inverse() * T60 * A65.inverse() * A54.inverse();
+    Xhat43 = T43m.block(0, 0, 3, 1);
+    float th4_8 = atan2(Xhat43(1), Xhat43(0));
+
+    //Reuslt of the inverse kinematics
+    MatrixXf Th(8,6);
+
+    Th << th1_1, th2_1, th3_1, th4_1, th5_1, th6_1,
+          th1_1, th2_2, th3_2, th4_2, th5_2, th6_2,
+          th1_2, th2_3, th3_3, th4_3, th5_3, th6_3,
+          th1_2, th2_4, th3_4, th4_4, th5_4, th6_4,
+          th1_1, th2_5, th3_5, th4_5, th5_1, th6_1,
+          th1_1, th2_6, th3_6, th4_6, th5_2, th6_2,
+          th1_2, th2_7, th3_7, th4_7, th5_3, th6_3,
+          th1_2, th2_8, th3_8, th4_8, th5_4, th6_4;
+
+    //cout << Th << endl;
 }
