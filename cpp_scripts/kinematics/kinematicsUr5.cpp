@@ -101,11 +101,8 @@ void invKin(float endEffectorPos[3]){
         temp << 0, 0, -D[5], 1;
 
         p50 = T60 * temp;
-        cout << "p50" <<endl<< p50 <<endl;
         float th1_1 = atan2(p50(1,0), p50(0,0))+acos(D[3]/hypot(p50(1,0), p50(0,0)))+M_PI_2;
         float th1_2 = atan2(p50(1,0), p50(0,0))-acos(D[3]/hypot(p50(1,0), p50(0,0)))+M_PI_2;
-        cout << "th1_1: " << th1_1 << endl;
-        cout << "th1_2: " << th1_2 << endl;
 
         float th5_1 = acos((endEffectorPos[0]*sin(th1_1) - endEffectorPos[1]*cos(th1_1)-D[3]) / D[5]);
         float th5_2 = -acos((endEffectorPos[0]*sin(th1_1) - endEffectorPos[1]*cos(th1_1)-D[3]) / D[5]);
@@ -120,6 +117,19 @@ void invKin(float endEffectorPos[3]){
         T06 = T60.inverse();        
         Xhat = T06.block(0,0,3,1);        
         Yhat = T06.block(0,1,3,1);
+        cout << "Xhat" <<endl<< Xhat <<endl;
+        cout << "Yhat" <<endl<< Yhat <<endl;
+
+
+        float th6_1 = atan2(((-Xhat(1)*sin(th1_1)+Yhat(1)*cos(th1_1)))/sin(th5_1), ((Xhat(0)*sin(th1_1)-Yhat(0)*cos(th1_1)))/sin(th5_1));
+        float th6_2 = atan2(((-Xhat(1)*sin(th1_1)+Yhat(1)*cos(th1_1)))/sin(th5_2), ((Xhat(0)*sin(th1_1)-Yhat(0)*cos(th1_1)))/sin(th5_2));
+        float th6_3 = atan2(((-Xhat(1)*sin(th1_2)+Yhat(1)*cos(th1_2)))/sin(th5_3), ((Xhat(0)*sin(th1_2)-Yhat(0)*cos(th1_2)))/sin(th5_3));
+        float th6_4 = atan2(((-Xhat(1)*sin(th1_2)+Yhat(1)*cos(th1_2)))/sin(th5_4), ((Xhat(0)*sin(th1_2)-Yhat(0)*cos(th1_2)))/sin(th5_4));
+        
+        
+
+
+        
 
 
 }
