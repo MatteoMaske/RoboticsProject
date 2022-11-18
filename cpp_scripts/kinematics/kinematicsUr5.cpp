@@ -6,10 +6,20 @@ using namespace std;
 using Eigen::MatrixXf;
 using Eigen::Vector4d;
 
+//distance vectors
 const float A[6] = {0, -0.425, -0.3922, 0, 0, 0};
 const float D[6] = {0.1625, 0, 0, 0.1333, 0.0997, 0.0996};
 
 MatrixXf Re(3,3);
+
+//rotation matrix forward kinematics
+MatrixXf A10(4,4);
+MatrixXf A21(4, 4);
+MatrixXf A32(4, 4);
+MatrixXf A43(4, 4);
+MatrixXf A54(4, 4);
+MatrixXf A65(4, 4);
+MatrixXf A60(4, 4);
 
 void fwKin(float Th[6], float endEffectorPos[3]); // This function will calculate the forward kinematics of the robot and return the position of the end effector
 void invKin(float endEffectorPos[3]); // This function will calculate the inverse kinematics of the robot and return the joint angles
@@ -30,13 +40,13 @@ int main(int argc, char** argv){
 
 void fwKin(float Th[6], float endEffectorPos[3]){
 
-        MatrixXf A10(4,4);
-        MatrixXf A21(4,4);
-        MatrixXf A32(4,4);
-        MatrixXf A43(4,4);
-        MatrixXf A54(4,4);
-        MatrixXf A65(4,4);
-        MatrixXf A60(4,4);
+        // MatrixXf A10(4,4);
+        // MatrixXf A21(4,4);
+        // MatrixXf A32(4,4);
+        // MatrixXf A43(4,4);
+        // MatrixXf A54(4,4);
+        // MatrixXf A65(4,4);
+        // MatrixXf A60(4,4);
 
         MatrixXf Pe(1,4);
         
@@ -88,8 +98,6 @@ void invKin(float endEffectorPos[3]){
         
         MatrixXf T60 (4,4);
 
-        cout << "Re" <<endl<< Re <<endl;
-
         T60 << Re(0,0), Re(0,1), Re(0,2), endEffectorPos[0],
                Re(1,0), Re(1,1), Re(1,2), endEffectorPos[1],
                Re(2,0), Re(2,1), Re(2,2), endEffectorPos[2],
@@ -117,19 +125,21 @@ void invKin(float endEffectorPos[3]){
         T06 = T60.inverse();        
         Xhat = T06.block(0,0,3,1);        
         Yhat = T06.block(0,1,3,1);
-        cout << "Xhat" <<endl<< Xhat <<endl;
-        cout << "Yhat" <<endl<< Yhat <<endl;
-
 
         float th6_1 = atan2(((-Xhat(1)*sin(th1_1)+Yhat(1)*cos(th1_1)))/sin(th5_1), ((Xhat(0)*sin(th1_1)-Yhat(0)*cos(th1_1)))/sin(th5_1));
+        //related to th11 a th52
         float th6_2 = atan2(((-Xhat(1)*sin(th1_1)+Yhat(1)*cos(th1_1)))/sin(th5_2), ((Xhat(0)*sin(th1_1)-Yhat(0)*cos(th1_1)))/sin(th5_2));
+        //related to th12 a th53
         float th6_3 = atan2(((-Xhat(1)*sin(th1_2)+Yhat(1)*cos(th1_2)))/sin(th5_3), ((Xhat(0)*sin(th1_2)-Yhat(0)*cos(th1_2)))/sin(th5_3));
+        //related to th12 a th54
         float th6_4 = atan2(((-Xhat(1)*sin(th1_2)+Yhat(1)*cos(th1_2)))/sin(th5_4), ((Xhat(0)*sin(th1_2)-Yhat(0)*cos(th1_2)))/sin(th5_4));
         
+        MatrixXf T41m(4,4);
+        MatrixXf p41_1(1,4);
+
+        T41m = A10.inverse() * T60 * A65.inverse() * A54.inverse();
+        p41_1 = T41m.block(0,3,3,1);
+        float p41xz_1 = hypot(p41_1(0), p41_1(2));
         
-
-
         
-
-
 }
