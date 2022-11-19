@@ -35,6 +35,13 @@ void forwardKinematics(){
 
 }
 
-void anthropomorphicTrans(){
+void moveUr5(){
+    // Moves the ur5 from an initial pose to a target frame represnting an object
+    // The target frame is defined by a 4x4 matrix
+    // The initial pose is defined by a 4x4 matrix
+    
+    // compute the jacobian
+    // velocity = jacobian * joint_angles_derived
+    
 
 }
