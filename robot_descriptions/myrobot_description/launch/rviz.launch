@@ -20,8 +20,9 @@
 		<param name="publish_frequency" value="200" />
 		<param name="rate" value="200" />
 	</node>
-	
+
 	<!-- run rviz -->
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_conf) -f world"/>
 
 </launch>
+
