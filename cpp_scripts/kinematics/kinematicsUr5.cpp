@@ -9,14 +9,13 @@ using Eigen::MatrixXf;
 //distance vectors
 const float A[6] = {0, -0.425, -0.3922, 0, 0, 0};
 const float D[6] = {0.1625, 0, 0, 0.1333, 0.0997, 0.0996};
-
-struct EndEffector{
+struct EEPose{
     MatrixXf Pe;
     MatrixXf Re;
 };
 
-EndEffector fwKin(MatrixXf Th); // This function will calculate the forward kinematics of the robot and return the position of the end effector
-MatrixXf invKin(EndEffector endEffector); // This function will calculate the inverse kinematics of the robot and return the joint angles
+EEPose fwKin(MatrixXf Th); // This function will calculate the forward kinematics of the robot and return the position of the end effector
+MatrixXf invKin(EEPose eePose); // This function will calculate the inverse kinematics of the robot and return the joint angles
 
 //calculates rotation matrix for each joint
 MatrixXf calcA10(float th0);
@@ -26,26 +25,26 @@ MatrixXf calcA43(float th3);
 MatrixXf calcA54(float th4);
 MatrixXf calcA65(float th5);
 
-int main(int argc, char** argv){
+/*int main(int argc, char** argv){
     cout.setf(ios::fixed);
 
     //float Th[6] = {1.6, 0.2, -0.5, 2.89, 1.1, 1.25};
     MatrixXf Th(1,6); Th << 1.6, 0.2, -0.5, 2.89, 1.1, 1.25;
     MatrixXf ThInv(8,6);
-    EndEffector endEffector; EndEffector endEffector1;
+    EEPose eePose; EEPose eePose1;
 
-    endEffector = fwKin(Th); //calculates forward kinematics
-    ThInv = invKin(endEffector); //calculates inverse kinematics
+    eePose = fwKin(Th); //calculates forward kinematics
+    //ThInv = invKin(eePose); //calculates inverse kinematics
 
-    //cout << "The end effector is at: " << endEffector.Pe(0) << ", " << endEffector.Pe(1) << ", " << endEffector.Pe(2) << endl;
+    cout << "The end effector is at: " << eePose.Pe(0) << ", " << eePose.Pe(1) << ", " << eePose.Pe(2) << endl;
 
-    for(int i=0; i<8; i++){
-        endEffector1 = fwKin(ThInv.row(i));
-        cout << "pe[" << i << "]: " << setprecision(2) << (endEffector1.Pe - endEffector.Pe) << ", Re[" << i << "]: " << setprecision(6) << (endEffector1.Re - endEffector.Re) << endl;
-    }
+    // for(int i=0; i<8; i++){
+    //     eePose1 = fwKin(ThInv.row(i));
+    //     cout << "pe[" << i << "]: " << setprecision(2) << (eePose1.Pe - eePose.Pe) << ", Re[" << i << "]: " << setprecision(6) << (eePose1.Re - eePose.Re) << endl;
+    // }
 
     return 0;
-}
+}*/
 
 MatrixXf calcA10(float Th0){
     MatrixXf A10(4,4);
@@ -113,7 +112,7 @@ MatrixXf calcA65(float Th5){
     return A65;
 }
 
-EndEffector fwKin(MatrixXf Th){
+EEPose fwKin(MatrixXf Th){
 
     MatrixXf A60(4, 4);
     MatrixXf Re(4,4);
@@ -127,18 +126,18 @@ EndEffector fwKin(MatrixXf Th){
     //cout << Pe << endl;
     //cout << Re << endl;
 
-    EndEffector endEffector;
-    endEffector.Pe = Pe;
-    endEffector.Re = Re;
+    EEPose eePose;
+    eePose.Pe = Pe;
+    eePose.Re = Re;
 
-    return endEffector;
+    return eePose;
 }
 
-MatrixXf invKin(EndEffector endEffector){
+MatrixXf invKin(EEPose eePose){
 
-    MatrixXf Re = endEffector.Re;
+    MatrixXf Re = eePose.Re;
     MatrixXf T60(4, 4);
-    float endEffectorPos[3] = {endEffector.Pe(0), endEffector.Pe(1), endEffector.Pe(2)};
+    float endEffectorPos[3] = {eePose.Pe(0), eePose.Pe(1), eePose.Pe(2)};
 
     T60 << Re(0, 0), Re(0, 1), Re(0, 2), endEffectorPos[0],
         Re(1, 0), Re(1, 1), Re(1, 2), endEffectorPos[1],
