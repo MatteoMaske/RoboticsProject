@@ -5,7 +5,7 @@ using namespace std;
 using Eigen::MatrixXf;
 
 struct robotParams{
-    float armLenght[6]= {0, -0.425, -0.3922, 0, 0, 0};
+    float armLength[6]= {0, -0.425, -0.3922, 0, 0, 0};
     float wristPos[3] = {0.1978, -0.6579, 0.2324};
 }robotParams;
 
@@ -18,14 +18,14 @@ int main(int argc, char** argv){
     robotParams.wristPos[1] = 0.5;
     robotParams.wristPos[2] = 0.5;
 
-    inverseKin(robotParams.armLenght, robotParams.wristPos);
+    inverseKin(robotParams.armLength, robotParams.wristPos);
 
 
     return 0;
 }
 
 // fun to compute inverse kinematics taking armlength and wrist position as input
-void inverseKin(float * armLenght, float * wristPos){
+void inverseKin(float * armLength, float * wristPos){
 
     // saving wrist variables
     float wpx = wristPos[0];
@@ -33,9 +33,9 @@ void inverseKin(float * armLenght, float * wristPos){
     float wpz = wristPos[2];
 
     // saving arm variables
-    float a0 = armLenght[0];
-    float a1 = armLenght[1];
-    float a2 = armLenght[2];
+    float a0 = armLength[0];
+    float a1 = armLength[1];
+    float a2 = armLength[2];
 
     float sin1, cos1, sin2, cos2, sin3, cos3;
 
