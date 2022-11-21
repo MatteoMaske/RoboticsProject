@@ -27,10 +27,13 @@ int main(int argc, char **argv){
     Th0 << 0, 0, 0, 0.01, 0.01, 0;
 
     eePose = fwKin(Th0);
-    // Eigen::Vector3f phie0;
-    // cout << "Re" << endl << eePose.Re << endl;
-    // phie0 = eePose.Re.eulerAngles(0,1,2);
-    // cout << "phiex0: " << phie0 << endl;
+    MatrixXf phie0;
+    Eigen::Matrix3f tmp;
+    tmp = eePose.Re;
+    phie0 = tmp.eulerAngles(0,1,2); //non funziona
+    cout << "phie0: " << endl << phie0 << endl;
+    // phie0.transposeInPlace();
+    // cout << "phie0: " << endl << phie0 << endl;
 
     //target position
     MatrixXf xef(1,3);
@@ -39,15 +42,27 @@ int main(int argc, char **argv){
     phief << M_PI, M_PI_4, 3*M_PI_4;
 
     //temporaneo finchè matteo non fa il suo lavoro
-    MatrixXf phie0(1,3);
-    phie0 << -0.01, -0.01, -1.5709;
+    //MatrixXf phie0(1,3);
+    //phie0 << -0.01, -0.01, -1.5709;
 
     MatrixXf x(1,3);
     MatrixXf phi(1,3);
-    for(float t=0; t<=1.0101; t += 0.0101){
+    MatrixXf TH(8,6);
+    MatrixXf Th;
+    EEPose eePose1;
+
+    for(float t=0; t<0.0202; t += 0.0101){ //t <= 1.0101
+        //cout << "t: " << t << endl; 
         x = xe(t, xef, eePose.Pe);
         phi = phie(t, phief, phie0);
-        cout << "x: " << x << endl;
+        x.transposeInPlace();
+        //phi.transposeInPlace();
+        eePose1.Pe = x;
+        eePose1.Re = phi; //dobbiamo usare eul2rotm se no non funziona
+        //cout << "phi: " << phi << endl;
+        //TH = invKin(eePose1); //core dump se non usaimo eul2rotm
+        //Th = Th, TH.row(0);
+        //cout << "Th: " << Th << endl;
     }
 
     return 0;
@@ -63,6 +78,7 @@ MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0){
 
 //linear intepolation of the orientation
 MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0){
+    phie0.transposeInPlace();
     MatrixXf phi(1,3);
     phi = t * phief + (1-t) * phie0;
     return phi;

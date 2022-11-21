@@ -34,7 +34,7 @@ MatrixXf calcA65(float th5);
     EEPose eePose; EEPose eePose1;
 
     eePose = fwKin(Th); //calculates forward kinematics
-    //ThInv = invKin(eePose); //calculates inverse kinematics
+    ThInv = invKin(eePose); //calculates inverse kinematics
 
     cout << "The end effector is at: " << eePose.Pe(0) << ", " << eePose.Pe(1) << ", " << eePose.Pe(2) << endl;
 
