@@ -20,16 +20,16 @@ MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation o
 int main(int argc, char **argv){
 
     //ROS initialization
-    // ros::init(argc, argv, "testUR5b");
-    // ros::NodeHandle node;
-    // ros::Publisher pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1);
-    // ros::Rate loop_rate(1000);
+    ros::init(argc, argv, "testUR5b");
+    ros::NodeHandle node;
+    ros::Publisher pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1);
+    ros::Rate loop_rate(1000);
 
     EEPose eePose;
 
     //initial joint angles
     MatrixXf Th0(1,6);
-    Th0 << 0, 0, 0, 0.01, 0.01, 0;
+    Th0 << 0, 0, 0, 0.01, 0.01, 0; //-0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017 //homing procedure
 
     //calc initial end effector pose
     eePose = fwKin(Th0);
@@ -80,16 +80,20 @@ int main(int argc, char **argv){
         Th.row(Th.rows()-1) = TH.row(0);
     }
 
-    cout << "Th: " << Th << endl;
+    //cout << "Th: " << Th << endl;
     
-    //ROS loop
-    // std_msgs::Float64MultiArray msg; //message to publish
-    // msg.data.resize(9);
-    // while(ros::ok){
-    //     pub_des_jstate.publish(msg);
+    //msg to publish
+    std_msgs::Float64MultiArray msg;
+    msg.data.resize(9); //6 joint angles + 3 end effector joints
+    //cout << "msg: " << msg.data[0] << endl;
 
-    //     loop_rate.sleep();
-    // }
+    //ROS loop
+    while(ros::ok){
+
+        pub_des_jstate.publish(msg); //publish the message
+
+        loop_rate.sleep(); //sleep for the time remaining to let us hit our 1000Hz publish rate
+    }
 
     return 0;
 }

@@ -20,13 +20,15 @@ import rosnode
 import rosgraph
 import rospkg
 
-#other utils
+# other utils
 from base_controllers.utils.math_tools import *
 import pinocchio as pin
-np.set_printoptions(threshold=np.inf, precision = 5, linewidth = 1000, suppress = True)
+
+np.set_printoptions(threshold=np.inf, precision=5, linewidth=1000, suppress=True)
 from termcolor import colored
 from base_controllers.utils.common_functions import plotJoint, plotEndeff
-import  params as conf
+import params as conf
+
 robotName = "ur5"
 
 # controller manager management
@@ -39,8 +41,9 @@ from rospy import Time
 import time
 from base_controllers.components.gripper_manager import GripperManager
 
+
 class Ur5Generic(BaseControllerFixed):
-    
+
     def __init__(self, robot_name="ur5"):
         super().__init__(robot_name=robot_name)
         self.real_robot = conf.robot_params[self.robot_name]['real_robot']
@@ -62,9 +65,9 @@ class Ur5Generic(BaseControllerFixed):
             self.gripper = False
         self.gm = GripperManager(self.real_robot, conf.robot_params[self.robot_name]['dt'])
 
-        #self.world_name = None # only the workbench
-        self.world_name = 'tavolo_brick.world'
-        #self.world_name = 'palopoli.world'
+        # self.world_name = None # only the workbench
+        self.world_name = 'empty.world'
+        # self.world_name = 'palopoli.world'
 
         print("Initialized ur5 generic  controller---------------------------------------------------------------")
 
@@ -120,10 +123,10 @@ class Ur5Generic(BaseControllerFixed):
                                                         Float64MultiArray, queue_size=10)
             self.available_controllers = [
                 "joint_group_pos_controller",
-                "scaled_pos_joint_traj_controller" ]
+                "scaled_pos_joint_traj_controller"]
         else:
             self.available_controllers = ["joint_group_pos_controller",
-                                          "pos_joint_traj_controller" ]
+                                          "pos_joint_traj_controller"]
         self.active_controller = self.available_controllers[0]
 
         self.broadcaster = tf.TransformBroadcaster()
@@ -141,12 +144,12 @@ class Ur5Generic(BaseControllerFixed):
         self.contactMomentW = self.w_R_tool0.dot(contactMomentTool0)
 
     def deregister_node(self):
-        print( "deregistering nodes"     )
+        print("deregistering nodes")
         self.ros_pub.deregister_node()
         if not self.real_robot:
-            os.system(" rosnode kill /"+self.robot_name+"/ros_impedance_controller")
+            os.system(" rosnode kill /" + self.robot_name + "/ros_impedance_controller")
             os.system(" rosnode kill /gzserver /gzclient")
-                                                                                                                                     
+
     def updateKinematicsDynamics(self):
         # q is continuously updated
         # to compute in the base frame  you should put neutral base
@@ -155,46 +158,47 @@ class Ur5Generic(BaseControllerFixed):
         self.M = self.robot.mass(self.q)
         # bias terms
         self.h = self.robot.nle(self.q, self.qd)
-        #gravity terms
+        # gravity terms
         self.g = self.robot.gravity(self.q)
-        #compute ee position  in the world frame
+        # compute ee position  in the world frame
         frame_name = conf.robot_params[self.robot_name]['ee_frame']
         # this is expressed in the base frame
         self.x_ee = self.robot.framePlacement(self.q, self.robot.model.getFrameId(frame_name)).translation
         self.w_R_tool0 = self.robot.framePlacement(self.q, self.robot.model.getFrameId(frame_name)).rotation
         # compute jacobian of the end effector in the base or world frame (they are aligned so in terms of velocity they are the same)
-        self.J6 = self.robot.frameJacobian(self.q, self.robot.model.getFrameId(frame_name), False, pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)                    
-        # take first 3 rows of J6 cause we have a point contact            
-        self.J = self.J6[:3,:] 
+        self.J6 = self.robot.frameJacobian(self.q, self.robot.model.getFrameId(frame_name), False,
+                                           pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)
+        # take first 3 rows of J6 cause we have a point contact
+        self.J = self.J6[:3, :]
         # broadcast base world TF
         self.broadcaster.sendTransform(self.base_offset, (0.0, 0.0, 0.0, 1.0), Time.now(), '/base_link', '/world')
 
-
     def startupProcedure(self):
         if (self.use_torque_control):
-            #set joint pdi gains
-            self.pid.setPDjoints( conf.robot_params[self.robot_name]['kp'], conf.robot_params[self.robot_name]['kd'], np.zeros(self.robot.na))
+            # set joint pdi gains
+            self.pid.setPDjoints(conf.robot_params[self.robot_name]['kp'], conf.robot_params[self.robot_name]['kd'],
+                                 np.zeros(self.robot.na))
         if (self.real_robot):
             self.zero_sensor()
-        self.u.putIntoGlobalParamServer("real_robot",  self.real_robot)
+        self.u.putIntoGlobalParamServer("real_robot", self.real_robot)
         print(colored("finished startup -- starting controller", "red"))
 
     def switch_controller(self, target_controller):
         """Activates the desired controller and stops all others from the predefined list above"""
-        print('Available controllers: ',self.available_controllers)
+        print('Available controllers: ', self.available_controllers)
         print('Controller manager: loading ', target_controller)
 
         other_controllers = (self.available_controllers)
         other_controllers.remove(target_controller)
-        print('Controller manager:Switching off  :  ',other_controllers)
+        print('Controller manager:Switching off  :  ', other_controllers)
 
         srv = LoadControllerRequest()
         srv.name = target_controller
 
-        self.load_controller_srv(srv)  
-        
+        self.load_controller_srv(srv)
+
         srv = SwitchControllerRequest()
-        srv.stop_controllers = other_controllers 
+        srv.stop_controllers = other_controllers
         srv.start_controllers = [target_controller]
         srv.strictness = SwitchControllerRequest.BEST_EFFORT
         self.switch_controller_srv(srv)
@@ -212,7 +216,7 @@ class Ur5Generic(BaseControllerFixed):
     def deregister_node(self):
         super().deregister_node()
         if not self.real_robot:
-            os.system(" rosnode kill /"+self.robot_name+"/ros_impedance_controller")
+            os.system(" rosnode kill /" + self.robot_name + "/ros_impedance_controller")
             os.system(" rosnode kill /gzserver /gzclient")
 
     def plotStuff(self):
@@ -240,13 +244,15 @@ class Ur5Generic(BaseControllerFixed):
                     p.gm.move_gripper(100)
                 break
 
+
 def talker(p):
     p.start()
     if p.real_robot:
         p.startRealRobot()
     else:
-        additional_args = 'gripper:=' + str(p.gripper) # +'gui:=false'
-        p.startSimulator(world_name=p.world_name, use_torque_control=p.use_torque_control, additional_args =additional_args)
+        additional_args = 'gripper:=' + str(p.gripper)  # +'gui:=false'
+        p.startSimulator(world_name=p.world_name, use_torque_control=p.use_torque_control,
+                         additional_args=additional_args)
 
     # specify xacro location
     xacro_path = rospkg.RosPack().get_path('ur_description') + '/urdf/' + p.robot_name + '.urdf.xacro'
@@ -267,16 +273,18 @@ def talker(p):
         p.switch_controller("joint_group_pos_controller")
 
     gripper_on = 0
-    #control loop
+    # control loop
     while not ros.is_shutdown():
         p.updateKinematicsDynamics()
         # homing procedure
 
         if p.homing_flag:
             p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, conf.robot_params[p.robot_name]['q_0'], rate)
+            #goes to postion 0.5, 0.5, 0
+            p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, np.array([3.82753, -0.558654, 1.38358, -0.824923, 2.25673, -1.5708]), rate)
 
         ## set joints here
-        #p.q_des = p.q_des_q0  + 0.1 * np.sin(2*np.pi*0.5*p.time)
+        # p.q_des = p.q_des_q0  + 0.1 * np.sin(2*np.pi*0.5*p.time)
         ##test gripper
         # in Simulation remember to set gripper_sim : True in params.yaml!
         # if p.time>5.0 and (gripper_on == 0):
@@ -288,7 +296,7 @@ def talker(p):
         #     p.gm.move_gripper(100)
         #     gripper_on = 2
         # need to uncomment this to be able to send joints references (leave it commented if you have an external node setting them)
-        #p.send_reduced_des_jstate(p.q_des)
+        # p.send_reduced_des_jstate(p.q_des)
 
         if p.real_robot:
             p.ros_pub.add_arrow(p.x_ee + p.base_offset, p.contactForceW / (6 * p.robot.robot_mass), "green")
@@ -300,9 +308,11 @@ def talker(p):
         p.ros_pub.add_marker(p.x_ee + p.base_offset)
         p.ros_pub.publishVisual()
 
-        #wait for synconization of the control loop
+        # wait for synconization of the control loop
         rate.sleep()
-        p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),  3)  # to avoid issues of dt 0.0009999
+        p.time = np.round(p.time + np.array([conf.robot_params[p.robot_name]['dt']]),
+                          3)  # to avoid issues of dt 0.0009999
+
 
 if __name__ == '__main__':
 
@@ -313,8 +323,7 @@ if __name__ == '__main__':
     except (ros.ROSInterruptException, ros.service.ServiceException):
         ros.signal_shutdown("killed")
         p.deregister_node()
-        if   conf.plotting:
+        if conf.plotting:
             p.plotStuff()
 
-    
-        
+

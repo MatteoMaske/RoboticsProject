@@ -72,7 +72,25 @@ int main(int argc, char **argv){
         Th.row(Th.rows()-1) = TH.row(0);
     }
 
-    cout << "Th: " << Th << endl;
+    //cout << "Th: " << Th << endl;
+
+    /**********************************/
+    // EEPose eePose2;
+
+    // MatrixXf temp1(1,3);
+    // temp1 << 0.5, 0.5, 0;
+    // eePose2.Pe = temp1;
+
+    // MatrixXf temp(3,3);
+    // tmp <<  0, 0, 1,
+    //         0, 1, 0,
+    //         -1, 0, 0;
+    // eePose2.Re = tmp;
+
+    // TH = invKin(eePose2);
+
+    // cout << "TH: " << endl << TH << endl;
+    /**********************************/
     
     return 0;
 }
