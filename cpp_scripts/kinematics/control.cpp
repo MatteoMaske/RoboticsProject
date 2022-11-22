@@ -7,10 +7,9 @@
 #include <vector>
 #include <sstream>
 
-typedef double orientation_t; // position is represented in radiants
-typedef Eigen::Vector3f position_t; // position is represented in meters ?
-typedef Eigen::Vector3f velocity_t; // velocity is represented in meters/second
-
+typedef float orientation_t; // position is represented in radiants
+typedef Eigen::Matrix<double, 3, 1> position_t; // position is represented in meters ?
+typedef Eigen::Matrix<double, 3, 1> velocity_t; // velocity is represented in meters/second
 position_t endEffectorDesired;
 position_t endEffectorCurrent;
 
@@ -32,12 +31,12 @@ typedef struct robotParams{
 
 
 int main(int argc, char** argv){
-    Eigen::Matrix3f J;
+    Eigen::Matrix <float, 6, 6> J;
     return 0;
 }
 
 /**
- * @brief This function computes the Jacobian matrix
+ * @brief Computes the Jacobian matrix
  * 
  * @return Eigen::Matrix3f
  */

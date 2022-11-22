@@ -13,8 +13,8 @@ using Eigen::MatrixXf;
     MatrixXf Re;
 };*/
 
-MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear intepolation of the position
-MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear intepolation of the orientation
+MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
+MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation of the orientation
 
 
 int main(int argc, char **argv){
