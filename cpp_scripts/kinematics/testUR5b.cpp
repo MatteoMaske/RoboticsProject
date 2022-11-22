@@ -15,8 +15,8 @@ using Eigen::MatrixXf;
     MatrixXf Re;
 };*/
 
-MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear intepolation of the position
-MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear intepolation of the orientation
+MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
+MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation of the orientation
 
 int main(int argc, char **argv){
 
@@ -68,7 +68,7 @@ int main(int argc, char **argv){
     return 0;
 }
 
-//linear intepolation of the position
+//linear interpolation of the position
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0){
     xe0.transposeInPlace();
     MatrixXf x(1,3);
@@ -76,7 +76,7 @@ MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0){
     return x;
 }
 
-//linear intepolation of the orientation
+//linear interpolation of the orientation
 MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0){
     phie0.transposeInPlace();
     MatrixXf phi(1,3);
