@@ -20,10 +20,10 @@ MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation o
 int main(int argc, char **argv){
 
     //ROS initialization
-    ros::init(argc, argv, "testUR5b");
-    ros::NodeHandle node;
-    ros::Publisher pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1);
-    ros::Rate loop_rate(1000);
+    // ros::init(argc, argv, "testUR5b");
+    // ros::NodeHandle node;
+    // ros::Publisher pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1);
+    // ros::Rate loop_rate(1000);
 
     EEPose eePose;
 
@@ -82,14 +82,14 @@ int main(int argc, char **argv){
 
     cout << "Th: " << Th << endl;
     
-    //ros loop
-    std_msgs::Float64MultiArray msg; //message to publish
-    msg.data.resize(9);
-    while(ros::ok){
-        pub_des_jstate.publish(msg);
+    //ROS loop
+    // std_msgs::Float64MultiArray msg; //message to publish
+    // msg.data.resize(9);
+    // while(ros::ok){
+    //     pub_des_jstate.publish(msg);
 
-        loop_rate.sleep();
-    }
+    //     loop_rate.sleep();
+    // }
 
     return 0;
 }

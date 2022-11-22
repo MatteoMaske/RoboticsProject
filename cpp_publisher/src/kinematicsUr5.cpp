@@ -46,6 +46,12 @@ MatrixXf calcA65(float th5);
     return 0;
 }*/
 
+/**
+ * @brief calculates the rotation matrix A10
+ * 
+ * @param Th0 
+ * @return MatrixXf 
+ */
 MatrixXf calcA10(float Th0){
     MatrixXf A10(4,4);
 
@@ -57,6 +63,12 @@ MatrixXf calcA10(float Th0){
     return A10;
 }
 
+/**
+ * @brief calculates the rotation matrix A21
+ * 
+ * @param Th1 
+ * @return MatrixXf 
+ */
 MatrixXf calcA21(float Th1){
     MatrixXf A21(4,4);
 
@@ -68,6 +80,12 @@ MatrixXf calcA21(float Th1){
     return A21;
 }
 
+/**
+ * @brief calculates the rotation matrix A32
+ * 
+ * @param Th2 
+ * @return MatrixXf 
+ */
 MatrixXf calcA32(float Th2){
     MatrixXf A32(4,4);
 
@@ -79,6 +97,12 @@ MatrixXf calcA32(float Th2){
     return A32;
 }
 
+/**
+ * @brief calculates the rotation matrix A43
+ * 
+ * @param Th3 
+ * @return MatrixXf 
+ */
 MatrixXf calcA43(float Th3){
     MatrixXf A43(4,4);
 
@@ -90,6 +114,12 @@ MatrixXf calcA43(float Th3){
     return A43;
 }
 
+/**
+ * @brief calculates the rotation matrix A54
+ * 
+ * @param Th4 
+ * @return MatrixXf 
+ */
 MatrixXf calcA54(float Th4){
     MatrixXf A54(4,4);
 
@@ -101,6 +131,12 @@ MatrixXf calcA54(float Th4){
     return A54;
 }
 
+/**
+ * @brief calculates the rotation matrix A65
+ * 
+ * @param Th5 
+ * @return MatrixXf 
+ */
 MatrixXf calcA65(float Th5){
     MatrixXf A65(4,4);
 
@@ -112,6 +148,12 @@ MatrixXf calcA65(float Th5){
     return A65;
 }
 
+/**
+ * @brief This function will calculate the forward kinematics of the robot and return the position of the end effector
+ * 
+ * @param Th The joint angles of the robot
+ * @return EEPose The position and orientation of the end effector
+ */
 EEPose fwKin(MatrixXf Th){
 
     MatrixXf A60(4, 4);
@@ -133,6 +175,12 @@ EEPose fwKin(MatrixXf Th){
     return eePose;
 }
 
+/**
+ * @brief This function will calculate the inverse kinematics of the robot and return the joint angles
+ * 
+ * @param eePose The position and orientation of the end effector
+ * @return MatrixXf The joint angles of the robot
+ */
 MatrixXf invKin(EEPose eePose){
 
     MatrixXf Re = eePose.Re;
