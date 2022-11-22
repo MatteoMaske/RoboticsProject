@@ -8,8 +8,9 @@
 #include <sstream>
 
 typedef double orientation_t; // position is represented in radiants
-typedef Eigen::Vector3d position_t; // position is represented in meters ?
-typedef Eigen::Vector3d velocity_t; // velocity is represented in meters/second
+typedef Eigen::Vector3f position_t; // position is represented in meters ?
+typedef Eigen::Vector3f velocity_t; // velocity is represented in meters/second
+
 position_t endEffectorDesired;
 position_t endEffectorCurrent;
 
@@ -29,20 +30,22 @@ typedef struct robotParams{
 // q -> joint angles
 // dq -> joint velocities
 
+
 int main(int argc, char** argv){
-    Eigen::Matrix3 <double> J;
+    Eigen::Matrix3f J;
     return 0;
 }
 
 /**
  * @brief This function computes the Jacobian matrix
  * 
- * @return Eigen::Matrix3d 
+ * @return Eigen::Matrix3f
  */
-Eigen::Matrix3d computeJacobian(){
+Eigen::Matrix3f computeJacobian(){
+    
     // TODO
-    Eigen::Matrix3d J;
-    J << 0.0, 0.0, 0.0,
+    Eigen::Matrix3f J;
+    J <<    0.0, 0.0, 0.0,
             0.0, 0.0, 0.0,
             0.0, 0.0, 0.0;
     return J;
@@ -57,7 +60,6 @@ void computeError(){
 }
 
 
-
 /**
  * @brief This function computes the controlled value for the inverse kinematics
  * 
@@ -69,15 +71,17 @@ void computeError(){
  * @param desiredVelocityEndEffector desired velocity of the end effector
  * @param K Positive definite matrix used to reduce the error
  * 
- * @return Eigen::Matrix3d 
+ * @return Eigen::Matrix3f
  */
-Eigen::Matrix3d computeControlledVal(robotParams* A, Eigen::Matrix3d (*computeJacobian)(orientation_t*, robotParams*),
+Eigen::Matrix3f computeControlledVal(robotParams* A, Eigen::Matrix3f (*computeJacobian)(orientation_t*, robotParams*),
                           orientation_t* jointOrientation, position_t endEffectorCurrent,
                           position_t endEffectorDesired, velocity_t desiredVelocityEndEffector,
-                           Eigen::Matrix3<double> K){
+                            Eigen::Matrix3f K){
+
     //double** J = // call computeJacobian();
-    Eigen::Matrix3<double> J = computeJacobian(jointOrientation, A);
-    Eigen::Matrix3<double> dot_Q = J.inverse() * (desiredVelocityEndEffector - K * (endEffectorDesired - endEffectorCurrent));
+    Eigen::Matrix3f J = computeJacobian(jointOrientation, A);
+    Eigen::Matrix3f dot_Q = J.inverse() * (desiredVelocityEndEffector - K * (endEffectorDesired - endEffectorCurrent));
+
     return dot_Q;
 }
 
@@ -94,8 +98,9 @@ float condition(){
  * @brief This function contains the main loop moving the robot
  * 
  */
-void moveRobot(robotParams* A, Eigen::Matrix3d (*computeJacobian)(position_t*, robotParams*), orientation_t* jointStartingOrientation,
-                position_t endEffectorDesired, float minT, float maxT, float dt, Eigen::Matrix3<double> K){
+void moveRobot(robotParams* A, Eigen::Matrix3f (*computeJacobian)(position_t*, robotParams*), orientation_t* jointStartingOrientation,
+                position_t endEffectorDesired, float minT, float maxT, float dt, Eigen::Matrix3f K){
+
     orientation_t* jointOrientation = jointStartingOrientation;
     for(float i = minT; i < maxT; i+=dt){
         // TODO 
