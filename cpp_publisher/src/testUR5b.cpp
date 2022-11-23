@@ -16,6 +16,8 @@ using Eigen::MatrixXf;
 
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
 MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation of the orientation
+void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate rate, ros::Publisher pub_des_jstate);//homing procedure
+void publish(Eigen::MatrixXf q, ros::Publisher pub); //publish the joint angles
 
 int main(int argc, char **argv){
 
@@ -23,7 +25,7 @@ int main(int argc, char **argv){
     ros::init(argc, argv, "testUR5b");
     ros::NodeHandle node;
     ros::Publisher pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1);
-    ros::Rate loop_rate(1);
+    ros::Rate loop_rate(1000);
 
     EEPose eePose;
 
@@ -109,7 +111,7 @@ int main(int argc, char **argv){
     int i = 0;
 
     //ROS loop
-    while(ros::ok){
+    /* while(ros::ok){
         
         msg.data.assign(9,0); //empty the msg
         for(int j=0; j<6; j++){ //insert a row of Th in the msg
@@ -133,7 +135,7 @@ int main(int argc, char **argv){
         //     ros::shutdown();
         // }
 
-        /*send data at 1 ms*/
+        /*send data at 1 ms
         // for(int i=0; i<Th.rows(); i++){
         //     msg.data.assign(9,0); //empty the msg
 
@@ -152,7 +154,29 @@ int main(int argc, char **argv){
         pub_des_jstate.publish(msg); //publish the message
 
         loop_rate.sleep(); //sleep for the time remaining to let us hit our 1000Hz publish rate
+    } */
+
+    MatrixXf possibleDest(8,6);
+    possibleDest = invKin(eePose);
+
+    //find the row of possibleDest with the minimum distance from Th0
+    MatrixXf minSol(1,6);
+    float minDist=0.0;
+    int minDistRow=0;
+    float dist=0.0;
+    for(int i=0; i<6; i++){
+        minSol = possibleDest.row(i) - Th0;
+        dist = minSol.norm();
+        if(dist < minDist){
+            minDist = dist;
+            minDistRow = i;
+        }           
     }
+
+    cout << "Selected joint mode: " << possibleDest.row(minDistRow) << endl;
+
+
+    homingProcedure(0.001, 0.6, possibleDest.row(minDistRow), Th0, loop_rate,pub_des_jstate);
 
     return 0;
 }
@@ -168,9 +192,10 @@ int main(int argc, char **argv){
  * @return Eigen::MatrixXf 
  */
 
-Eigen::MatrixXf homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate rate){
+void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate rate, ros::Publisher pub_des_jstate){
 
-    Eigen::MatrixXf Th(0,6);
+    cout << "HOMING PROCEDURE STARTED" << endl;
+
     Eigen::MatrixXf error (1,6);
     float errorNorm = 0.0;
     float vRef = 0.0;
@@ -179,14 +204,31 @@ Eigen::MatrixXf homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qR
         error = qDes - qRef;
         errorNorm = error.norm();
         vRef += 0.005*(vDes-vRef);
-        qDes += 0.005*vRef*error/errorNorm;
-        Th.conservativeResize(Th.rows()+1, Th.cols());
-        Th.row(Th.rows()-1) = qDes;
+        qRef += dt*vRef*error/errorNorm;
+        publish(qRef, pub_des_jstate);
         rate.sleep();
+        ros::spinOnce(); 
     }while(errorNorm > 0.001);
 
-    cout << "Th: " << Th << endl;
-    return Th;
+    cout << "HOMING PROCEDURE COMPLETED" << endl;
+}
+
+/**
+ * @brief publish the desired joint state
+ * 
+ * @param qRef 
+ * @param pub_des_jstate 
+ */
+void publish(MatrixXf qRef, ros::Publisher pub_des_jstate){
+
+    std_msgs::Float64MultiArray msg;
+    msg.data.resize(9); //6 joint angles + 3 end effector joints
+
+    for(int i=0; i<6; i++){
+        msg.data.at(i) = qRef(0,i);
+    }
+
+    pub_des_jstate.publish(msg); //publish the message
 }
 
 /**

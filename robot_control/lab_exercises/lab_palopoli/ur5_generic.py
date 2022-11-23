@@ -287,7 +287,7 @@ def talker(p):
         if p.homing_flag:
             p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, conf.robot_params[p.robot_name]['q_0'], rate)
             #goes to postion 0.5, 0.5, 0
-            p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, np.array([1.53395 ,-2.35596  ,2.61582 ,-1.75328  ,1.31227 ,0.273912]), rate)
+            #p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, np.array([1.53395 ,-2.35596  ,2.61582 ,-1.75328  ,1.31227 ,0.273912]), rate)
 
         ## set joints here
         # p.q_des = p.q_des_q0  + 0.1 * np.sin(2*np.pi*0.5*p.time)
