@@ -1,8 +1,8 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <cmath>
-#include "ros/ros.h"
 #include <std_msgs/Float64MultiArray.h>
+#include "ros/ros.h"
 #include "kinematicsUr5.cpp"
 
 using namespace std;
@@ -45,7 +45,7 @@ int main(int argc, char **argv){
     //target position
     MatrixXf xef(1,3); //postion
     MatrixXf phief(1,3); //orientation
-    xef << 0.19, 0.21, -0.7;  //potential position of the brick relative to world frame
+    xef << 0.5, 0.5, -0.7;  //potential position of the brick relative to world frame
     phief << 0, 0, 0; //potential orientation of the brick relative to world frame
  
     MatrixXf x(1,3);
@@ -54,8 +54,8 @@ int main(int argc, char **argv){
     MatrixXf Th(0,6);
     EEPose eePose1;
 
-    for(float t=0; t<1.0101; t += 0.0101){ //t <= 1.0101
-    
+    for(float t=0; t<=1; t += 0.01){ //t <= 1.0101
+        
         x = xe(t, xef, eePose.Pe); //linear interpolation of the position
         phi = phie(t, phief, phie0); //linear intepolation of the orientation
         x.transposeInPlace();
@@ -71,13 +71,33 @@ int main(int argc, char **argv){
         eePose1.Re = m;
         
         //inverse kinematics
-        TH = invKin(eePose1);
+        TH = invKin(eePose1);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+
         //cout << "TH: " << endl << TH << endl;
+
+        //check nan
+        bool use = true;
+        Th.conservativeResize(Th.rows()+1, Th.cols());
+        for(int i=0; i<8; i++){
+            use = true;
+            for(int j=0; j<6; j++){
+                if(isnan(TH(i,j))){
+                    use = false;
+                    break;
+                }
+            }
+
+            if(use){
+                Th.row(Th.rows()-1) = TH.row(i);
+                use = false;
+                break;
+            }
+        }
 
         //concatenate the first row of TH to Th
         /*prende il primo risultato della invKin, si può fare un controllo per scegliere il risultato migliore degli 8*/
-        Th.conservativeResize(Th.rows()+1, Th.cols());
-        Th.row(Th.rows()-1) = TH.row(0);
+        //Th.conservativeResize(Th.rows()+1, Th.cols());
+        //Th.row(Th.rows()-1) = TH.row(0);
     }
 
     //cout << "Th: " << Th << endl;
@@ -90,19 +110,38 @@ int main(int argc, char **argv){
 
     //ROS loop
     while(ros::ok){
-        cout << "cane dio" << endl;
-        msg.data.assign(9,0); //empty the msg
-        for(int j=0; j<6; j++){ //insert a row of Th in the msg
-            msg.data.at(j) = Th(i,j);
-        }
-        
-        pub_des_jstate.publish(msg); //publish the message
-        ros::spinOnce(); //allow data update from callback;
 
-        i++;
-        if(i == 100){ //after finishing the trajectory, stop the loop
-            ros::shutdown();
+        // msg.data.assign(9,0); //empty the msg
+
+        // for(int j=0; j<6; j++){ //insert a row of Th in the msg
+        //     msg.data.at(j) = Th(i,j);
+        // }
+        
+        // pub_des_jstate.publish(msg); //publish the message
+        // ros::spinOnce(); //allow data update from callback;
+
+        // i++;
+        // if(i == 100){ //after finishing the trajectory, stop the loop
+        //     ros::shutdown();
+        // }
+
+        /*send data at 1 ms*/
+        // for(int i=0; i<Th.rows(); i++){
+        //     msg.data.assign(9,0); //empty the msg
+
+        //     for(int j=0; j<6; j++){ //insert a row of Th in the msg
+        //         msg.data.at(j) = Th(i,j);
+        //     }
+            
+        //     pub_des_jstate.publish(msg); //publish the message
+        //     ros::spinOnce(); //allow data update from callback;
+        //     loop_rate.sleep();
+        // }
+
+        for(int i=0; i<6; i++){
+            msg.data.at(i) = Th(Th.rows()-1,i);
         }
+        pub_des_jstate.publish(msg); //publish the message
 
         loop_rate.sleep(); //sleep for the time remaining to let us hit our 1000Hz publish rate
     }
