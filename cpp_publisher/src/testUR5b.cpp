@@ -54,7 +54,7 @@ int main(int argc, char **argv){
     MatrixXf Th(0,6);
     EEPose eePose1;
 
-    for(float t=0; t<1.0101; t += 0.0101){ //t <= 1.0101
+   /*  for(float t=0; t<1.0101; t += 0.0101){ //t <= 1.0101
     
         x = xe(t, xef, eePose.Pe); //linear interpolation of the position
         phi = phie(t, phief, phie0); //linear intepolation of the orientation
@@ -75,12 +75,10 @@ int main(int argc, char **argv){
         //cout << "TH: " << endl << TH << endl;
 
         //concatenate the first row of TH to Th
-        /*prende il primo risultato della invKin, si può fare un controllo per scegliere il risultato migliore degli 8*/
+        /*prende il primo risultato della invKin, si può fare un controllo per scegliere il risultato migliore degli 8
         Th.conservativeResize(Th.rows()+1, Th.cols());
         Th.row(Th.rows()-1) = TH.row(0);
-    }
-
-    //cout << "Th: " << Th << endl;
+    } */
     
     //msg to publish
     std_msgs::Float64MultiArray msg;
@@ -90,7 +88,7 @@ int main(int argc, char **argv){
 
     //ROS loop
     while(ros::ok){
-        cout << "cane dio" << endl;
+        
         msg.data.assign(9,0); //empty the msg
         for(int j=0; j<6; j++){ //insert a row of Th in the msg
             msg.data.at(j) = Th(i,j);
@@ -108,6 +106,38 @@ int main(int argc, char **argv){
     }
 
     return 0;
+}
+
+/**
+ * @brief using homingProcedure template to get to a desired position
+ * 
+ * @param dt 
+ * @param vDes 
+ * @param qDes 
+ * @param qRef
+ * @param rate 
+ * @return Eigen::MatrixXf 
+ */
+
+Eigen::MatrixXf homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate rate){
+
+    Eigen::MatrixXf Th(0,6);
+    Eigen::MatrixXf error (1,6);
+    float errorNorm = 0.0;
+    float vRef = 0.0;
+
+    do{            
+        error = qDes - qRef;
+        errorNorm = error.norm();
+        vRef += 0.005*(vDes-vRef);
+        qDes += 0.005*vRef*error/errorNorm;
+        Th.conservativeResize(Th.rows()+1, Th.cols());
+        Th.row(Th.rows()-1) = qDes;
+        rate.sleep();
+    }while(errorNorm > 0.001);
+
+    cout << "Th: " << Th << endl;
+    return Th;
 }
 
 /**

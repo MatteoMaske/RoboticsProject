@@ -14,6 +14,7 @@ using Eigen::MatrixXf;
 
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
 MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation of the orientation
+Eigen::MatrixXf homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef); //using homingProcedure template to get to a desired position
 
 int main(int argc, char **argv){
 
@@ -21,7 +22,7 @@ int main(int argc, char **argv){
 
     //initial joint angles
     MatrixXf Th0(1,6);
-    Th0 << 0, 0, 0, 0.01, 0.01, 0;
+    Th0 << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //homing procedure
 
     //calc initial end effector pose
     eePose = fwKin(Th0);
@@ -37,10 +38,10 @@ int main(int argc, char **argv){
     //target position
     MatrixXf xef(1,3); //postion
     MatrixXf phief(1,3); //orientation
-    xef << 0.5, 0.5, 0;
-    phief << M_PI, M_PI_4, 3*M_PI_4;
+    xef << 0.19, 0.21, -0.7;  //potential position of the brick relative to world frame
+    phief << 0, 0, 0; 
 
-    MatrixXf x(1,3);
+ /*    MatrixXf x(1,3);
     MatrixXf phi(1,3);
     MatrixXf TH(8,6);
     MatrixXf Th(0,6);
@@ -67,10 +68,10 @@ int main(int argc, char **argv){
         //cout << "TH: " << endl << TH << endl;
 
         //concatenate the first row of TH to Th
-        /*prende il primo risultato della invKin, si può fare un controllo per scegliere il risultato migliore degli 8*/
+        /*prende il primo risultato della invKin, si può fare un controllo per scegliere il risultato migliore degli 8
         Th.conservativeResize(Th.rows()+1, Th.cols());
         Th.row(Th.rows()-1) = TH.row(0);
-    }
+    } */
 
     //cout << "Th: " << Th << endl;
 
@@ -91,7 +92,18 @@ int main(int argc, char **argv){
 
     // cout << "TH: " << endl << TH << endl;
     /**********************************/
-    
+
+    MatrixXf possibleDest(8,6);
+    possibleDest = invKin(eePose);
+
+    MatrixXf test(1,6);
+    test << 0, 0, 0, 0, 0, 0;
+
+    cout << "selected destination: " << endl << possibleDest.row(0) << endl;
+
+
+    homingProcedure(0.001, 0.6, possibleDest.row(0), Th0);
+
     return 0;
 }
 
@@ -123,4 +135,42 @@ MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0){
     MatrixXf phi(1,3);
     phi = t * phief + (1-t) * phie0;
     return phi;
+}
+
+/**
+ * @brief homingProcedure
+ * 
+ * @param dt 
+ * @param vDes 
+ * @param qDes 
+ * @param qRef
+ * @return Eigen::MatrixXf 
+ */
+
+Eigen::MatrixXf homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef){
+
+    Eigen::MatrixXf Th(0,6);
+    Eigen::MatrixXf error (1,6);
+    float errorNorm = 0.0;
+    float vRef = 0.0;
+
+    cout << "hello" << endl;
+    int i = 0;
+
+    do{            
+        error = qDes - qRef;
+        //cout << error << endl;
+        errorNorm = error.norm();
+        //cout << errorNorm << endl;
+        vRef += 0.005*(vDes-vRef);
+        qRef += dt*vRef*error/errorNorm;
+        if(i++ < 100)
+            cout << qRef << endl;
+
+        //Th.conservativeResize(Th.rows()+1, Th.cols());
+        //Th.row(Th.rows()-1) = qDes;
+    }while(errorNorm > 0.001);
+
+    //cout << "Th: " << Th << endl;
+    return Th;
 }
