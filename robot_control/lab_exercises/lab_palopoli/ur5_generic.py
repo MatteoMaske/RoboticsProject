@@ -222,7 +222,7 @@ class Ur5Generic(BaseControllerFixed):
     def plotStuff(self):
         plotJoint('position', 0, self.time_log, self.q_log)
 
-    def homing_procedure(self, dt, v_des, q_home, rate): #add some printing to understand the steps of the trajectory
+    def homing_procedure(self, dt, v_des, q_home, rate):
         v_ref = 0.0
         print(colored("STARTING HOMING PROCEDURE", 'red'))
         self.q_des = np.copy(self.q)
@@ -231,7 +231,7 @@ class Ur5Generic(BaseControllerFixed):
         print("Initial joint error = ", np.linalg.norm(self.q_des - q_home))
         print("q = ", self.q.T)
         print("Homing v des", v_des)
-        i=0;
+        i=0
         while True:
             e = q_home - self.q_des
             e_norm = np.linalg.norm(e)
@@ -269,7 +269,6 @@ def talker(p):
     time.sleep(3.)
 
     # loop frequency
-    # publish one message every second -> just to debug
     rate = ros.Rate(1 / conf.robot_params[p.robot_name]['dt'])
 
     p.q_des_q0 = conf.robot_params[p.robot_name]['q_0']
