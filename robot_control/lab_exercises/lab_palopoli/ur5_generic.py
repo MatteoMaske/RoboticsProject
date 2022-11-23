@@ -222,7 +222,7 @@ class Ur5Generic(BaseControllerFixed):
     def plotStuff(self):
         plotJoint('position', 0, self.time_log, self.q_log)
 
-    def homing_procedure(self, dt, v_des, q_home, rate):
+    def homing_procedure(self, dt, v_des, q_home, rate): #add some printing to understand the steps of the trajectory
         v_ref = 0.0
         print(colored("STARTING HOMING PROCEDURE", 'red'))
         self.q_des = np.copy(self.q)
@@ -234,7 +234,10 @@ class Ur5Generic(BaseControllerFixed):
             e_norm = np.linalg.norm(e)
             if (e_norm != 0.0):
                 v_ref += 0.005 * (v_des - v_ref)
+                print("before q_des = ", self.q_des)
+                print("summing up ", v_ref * dt * e / e_norm)
                 self.q_des += dt * v_ref * e / e_norm
+                print("after q_des = ", self.q_des)
                 self.send_reduced_des_jstate(self.q_des)
             rate.sleep()
             if (e_norm < 0.001):
@@ -263,7 +266,8 @@ def talker(p):
     time.sleep(3.)
 
     # loop frequency
-    rate = ros.Rate(1 / conf.robot_params[p.robot_name]['dt'])
+    # publish one message every second -> just to debug
+    rate = ros.Rate(1 )#/ conf.robot_params[p.robot_name]['dt'])
 
     p.q_des_q0 = conf.robot_params[p.robot_name]['q_0']
     p.q_des = np.copy(p.q_des_q0)
@@ -281,7 +285,7 @@ def talker(p):
         if p.homing_flag:
             p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, conf.robot_params[p.robot_name]['q_0'], rate)
             #goes to postion 0.5, 0.5, 0
-            p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, np.array([3.82753, -0.558654, 1.38358, -0.824923, 2.25673, -1.5708]), rate)
+            #p.homing_procedure(conf.robot_params[p.robot_name]['dt'], 0.6, np.array([3.82753, -0.558654, 1.38358, -0.824923, 2.25673, -1.5708]), rate)
 
         ## set joints here
         # p.q_des = p.q_des_q0  + 0.1 * np.sin(2*np.pi*0.5*p.time)

@@ -1,8 +1,8 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <cmath>
-#include <std_msgs/Float64MultiArray.h>
 #include "ros/ros.h"
+#include <std_msgs/Float64MultiArray.h>
 #include "kinematicsUr5.cpp"
 
 using namespace std;
@@ -23,13 +23,13 @@ int main(int argc, char **argv){
     ros::init(argc, argv, "testUR5b");
     ros::NodeHandle node;
     ros::Publisher pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1);
-    ros::Rate loop_rate(1000);
+    ros::Rate loop_rate(1);
 
     EEPose eePose;
 
     //initial joint angles
     MatrixXf Th0(1,6);
-    Th0 << 0, 0, 0, 0.01, 0.01, 0; //-0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017 //homing procedure
+    Th0 << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //homing procedure
 
     //calc initial end effector pose
     eePose = fwKin(Th0);
@@ -45,9 +45,9 @@ int main(int argc, char **argv){
     //target position
     MatrixXf xef(1,3); //postion
     MatrixXf phief(1,3); //orientation
-    xef << 0.5, 0.5, 0;
-    phief << M_PI, M_PI_4, 3*M_PI_4;
-
+    xef << 0.19, 0.21, -0.7;  //potential position of the brick relative to world frame
+    phief << 0, 0, 0; //potential orientation of the brick relative to world frame
+ 
     MatrixXf x(1,3);
     MatrixXf phi(1,3);
     MatrixXf TH(8,6);
@@ -86,11 +86,23 @@ int main(int argc, char **argv){
     std_msgs::Float64MultiArray msg;
     msg.data.resize(9); //6 joint angles + 3 end effector joints
     //cout << "msg: " << msg.data[0] << endl;
+    int i = 0;
 
     //ROS loop
     while(ros::ok){
-
+        cout << "cane dio" << endl;
+        msg.data.assign(9,0); //empty the msg
+        for(int j=0; j<6; j++){ //insert a row of Th in the msg
+            msg.data.at(j) = Th(i,j);
+        }
+        
         pub_des_jstate.publish(msg); //publish the message
+        ros::spinOnce(); //allow data update from callback;
+
+        i++;
+        if(i == 100){ //after finishing the trajectory, stop the loop
+            ros::shutdown();
+        }
 
         loop_rate.sleep(); //sleep for the time remaining to let us hit our 1000Hz publish rate
     }
