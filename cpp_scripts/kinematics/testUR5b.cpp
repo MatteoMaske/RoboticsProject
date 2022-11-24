@@ -15,6 +15,7 @@ using Eigen::MatrixXf;
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
 MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation of the orientation
 Eigen::MatrixXf homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef); //using homingProcedure template to get to a desired position
+Eigen::MatrixXf toRotationMatrix(Eigen::Vector3f euler); 
 
 int main(int argc, char **argv){
 
@@ -101,10 +102,28 @@ int main(int argc, char **argv){
 
     cout << "selected destination: " << endl << possibleDest.row(0) << endl;
 
+    Eigen::Vector3f euler;
+    euler << 0, M_PI, 0;
+    Eigen::MatrixXf rotation = toRotationMatrix(euler);
 
-    homingProcedure(0.001, 0.6, possibleDest.row(0), Th0);
+    cout << "rotation: " << endl << rotation << endl;
+
+    //homingProcedure(0.001, 0.6, possibleDest.row(0), Th0);
 
     return 0;
+}
+
+/**
+ * @brief From euler angles to rotation matrix
+ * 
+ * @param euler 
+ * @return Eigen::MatrixXf 
+ */
+
+Eigen::MatrixXf toRotationMatrix(Eigen::Vector3f euler){
+    Eigen::Matrix3f m;
+    m = Eigen::AngleAxisf(euler(0), Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf(euler(1), Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(euler(2), Eigen::Vector3f::UnitX());
+    return m;
 }
 
 /**

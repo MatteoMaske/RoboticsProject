@@ -18,6 +18,7 @@ MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the 
 MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation of the orientation
 void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate rate, ros::Publisher pub_des_jstate);//homing procedure
 void publish(Eigen::MatrixXf q, ros::Publisher pub); //publish the joint angles
+Eigen::MatrixXf toRotationMatrix(Eigen::Vector3f euler); //convert euler angles to rotation matrix
 
 int main(int argc, char **argv){
 
@@ -179,6 +180,19 @@ int main(int argc, char **argv){
     homingProcedure(0.001, 0.6, possibleDest.row(minDistRow), Th0, loop_rate,pub_des_jstate);
 
     return 0;
+}
+
+/**
+ * @brief From euler angles to rotation matrix
+ * 
+ * @param euler 
+ * @return Eigen::MatrixXf 
+ */
+
+Eigen::MatrixXf toRotationMatrix(Eigen::Vector3f euler){
+    Eigen::Matrix3f m;
+    m = Eigen::AngleAxisf(euler(0), Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf(euler(1), Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(euler(2), Eigen::Vector3f::UnitX());
+    return m;
 }
 
 /**
