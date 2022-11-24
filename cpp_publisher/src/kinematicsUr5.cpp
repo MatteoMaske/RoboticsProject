@@ -46,12 +46,6 @@ MatrixXf calcA65(float th5);
     return 0;
 }*/
 
-/**
- * @brief calculates the rotation matrix A10
- * 
- * @param Th0 
- * @return MatrixXf 
- */
 MatrixXf calcA10(float Th0){
     MatrixXf A10(4,4);
 
@@ -63,12 +57,6 @@ MatrixXf calcA10(float Th0){
     return A10;
 }
 
-/**
- * @brief calculates the rotation matrix A21
- * 
- * @param Th1 
- * @return MatrixXf 
- */
 MatrixXf calcA21(float Th1){
     MatrixXf A21(4,4);
 
@@ -80,12 +68,6 @@ MatrixXf calcA21(float Th1){
     return A21;
 }
 
-/**
- * @brief calculates the rotation matrix A32
- * 
- * @param Th2 
- * @return MatrixXf 
- */
 MatrixXf calcA32(float Th2){
     MatrixXf A32(4,4);
 
@@ -97,12 +79,6 @@ MatrixXf calcA32(float Th2){
     return A32;
 }
 
-/**
- * @brief calculates the rotation matrix A43
- * 
- * @param Th3 
- * @return MatrixXf 
- */
 MatrixXf calcA43(float Th3){
     MatrixXf A43(4,4);
 
@@ -114,12 +90,6 @@ MatrixXf calcA43(float Th3){
     return A43;
 }
 
-/**
- * @brief calculates the rotation matrix A54
- * 
- * @param Th4 
- * @return MatrixXf 
- */
 MatrixXf calcA54(float Th4){
     MatrixXf A54(4,4);
 
@@ -131,12 +101,6 @@ MatrixXf calcA54(float Th4){
     return A54;
 }
 
-/**
- * @brief calculates the rotation matrix A65
- * 
- * @param Th5 
- * @return MatrixXf 
- */
 MatrixXf calcA65(float Th5){
     MatrixXf A65(4,4);
 
@@ -148,12 +112,6 @@ MatrixXf calcA65(float Th5){
     return A65;
 }
 
-/**
- * @brief This function will calculate the forward kinematics of the robot and return the position of the end effector
- * 
- * @param Th The joint angles of the robot
- * @return EEPose The position and orientation of the end effector
- */
 EEPose fwKin(MatrixXf Th){
 
     MatrixXf A60(4, 4);
@@ -175,12 +133,6 @@ EEPose fwKin(MatrixXf Th){
     return eePose;
 }
 
-/**
- * @brief This function will calculate the inverse kinematics of the robot and return the joint angles
- * 
- * @param eePose The position and orientation of the end effector
- * @return MatrixXf The joint angles of the robot
- */
 MatrixXf invKin(EEPose eePose){
 
     MatrixXf Re = eePose.Re;
@@ -198,14 +150,17 @@ MatrixXf invKin(EEPose eePose){
     temp << 0, 0, -D[5], 1;
 
     p50 = T60 * temp;
-    float th1_1 = atan2(p50(1, 0), p50(0, 0)) + acos(D[3] / hypot(p50(1, 0), p50(0, 0))) + M_PI_2;
-    float th1_2 = atan2(p50(1, 0), p50(0, 0)) - acos(D[3] / hypot(p50(1, 0), p50(0, 0))) + M_PI_2;
+
+    complex<float> th1_1 = real(atan2(p50(1, 0), p50(0, 0)) + real(acos(D[3] / hypot(p50(1, 0), p50(0, 0)))) + M_PI_2);
+    complex<float> th1_2 = real(atan2(p50(1, 0), p50(0, 0)) - real(acos(D[3] / hypot(p50(1, 0), p50(0, 0)))) + M_PI_2);
 
     //Computation values for th5
-    float th5_1 = acos((endEffectorPos[0] * sin(th1_1) - endEffectorPos[1] * cos(th1_1) - D[3]) / D[5]);
-    float th5_2 = -acos((endEffectorPos[0] * sin(th1_1) - endEffectorPos[1] * cos(th1_1) - D[3]) / D[5]);
-    float th5_3 = acos((endEffectorPos[0] * sin(th1_2) - endEffectorPos[1] * cos(th1_2) - D[3]) / D[5]);
-    float th5_4 = -acos((endEffectorPos[0] * sin(th1_2) - endEffectorPos[1] * cos(th1_2) - D[3]) / D[5]);
+    complex<float> th5_1 = real(acos((endEffectorPos[0] * sin(th1_1) - endEffectorPos[1] * cos(th1_1) - D[3]) / D[5]));
+    complex<float> th5_2 = real(-acos((endEffectorPos[0] * sin(th1_1) - endEffectorPos[1] * cos(th1_1) - D[3]) / D[5]));
+    complex<float> th5_3 = real(acos((endEffectorPos[0] * sin(th1_2) - endEffectorPos[1] * cos(th1_2) - D[3]) / D[5]));
+    complex<float> th5_4 = real(-acos((endEffectorPos[0] * sin(th1_2) - endEffectorPos[1] * cos(th1_2) - D[3]) / D[5]));
+
+
 
     //Computation values for th6
     // related to th11 a th51
@@ -217,13 +172,14 @@ MatrixXf invKin(EEPose eePose){
     Xhat = T06.block(0, 0, 3, 1);
     Yhat = T06.block(0, 1, 3, 1);
 
-    float th6_1 = atan2(((-Xhat(1) * sin(th1_1) + Yhat(1) * cos(th1_1))) / sin(th5_1), ((Xhat(0) * sin(th1_1) - Yhat(0) * cos(th1_1))) / sin(th5_1));
+    complex<float> th6_1 = real(atan2(((-Xhat(1) * real(sin(th1_1)) + Yhat(1) * real(cos(th1_1))) / real(sin(th5_1))), ((Xhat(0) * real(sin(th1_1)) - Yhat(0) * real(cos(th1_1))) / real(sin(th5_1)))));
     // related to th11 a th52
-    float th6_2 = atan2(((-Xhat(1) * sin(th1_1) + Yhat(1) * cos(th1_1))) / sin(th5_2), ((Xhat(0) * sin(th1_1) - Yhat(0) * cos(th1_1))) / sin(th5_2));
+    complex<float> th6_2 = real(atan2(((-Xhat(1) * real(sin(th1_1)) + Yhat(1) * real(cos(th1_1))) / real(sin(th5_2))), ((Xhat(0) * real(sin(th1_1)) - Yhat(0) * real(cos(th1_1))) / real(sin(th5_2)))));
+
     // related to th12 a th53
-    float th6_3 = atan2(((-Xhat(1) * sin(th1_2) + Yhat(1) * cos(th1_2))) / sin(th5_3), ((Xhat(0) * sin(th1_2) - Yhat(0) * cos(th1_2))) / sin(th5_3));
+    complex<float> th6_3 = real(atan2(((-Xhat(1) * real(sin(th1_2)) + Yhat(1) * real(cos(th1_2))) / real(sin(th5_3))), ((Xhat(0) * real(sin(th1_2)) - Yhat(0) * real(cos(th1_2))) / real(sin(th5_3)))));
     // related to th12 a th54
-    float th6_4 = atan2(((-Xhat(1) * sin(th1_2) + Yhat(1) * cos(th1_2))) / sin(th5_4), ((Xhat(0) * sin(th1_2) - Yhat(0) * cos(th1_2))) / sin(th5_4));
+    complex<float> th6_4 = real(atan2(((-Xhat(1) * real(sin(th1_2)) + Yhat(1) * real(cos(th1_2))) / real(sin(th5_4))), ((Xhat(0) * real(sin(th1_2)) - Yhat(0) * real(cos(th1_2))) / real(sin(th5_4)))));
 
     MatrixXf T41m(4, 4);
     MatrixXf p41_1(1, 4);
@@ -234,93 +190,90 @@ MatrixXf invKin(EEPose eePose){
     //------------------------
     //cout << calcA10(th1_1) << endl;
 
-    T41m = calcA10(th1_1).inverse() * T60 * calcA65(th6_1).inverse() * calcA54(th5_1).inverse();
+    T41m = calcA10(real(th1_1)).inverse() * T60 * calcA65(real(th6_1)).inverse() * calcA54(real(th5_1)).inverse();
     p41_1 = T41m.block(0, 3, 3, 1);
     float p41xz_1 = hypot(p41_1(0), p41_1(2));
 
-    T41m = calcA10(th1_1).inverse() * T60 * calcA65(th6_2).inverse() * calcA54(th5_2).inverse();
+    T41m = calcA10(real(th1_1)).inverse() * T60 * calcA65(real(th6_2)).inverse() * calcA54(real(th5_2)).inverse();
     p41_2 = T41m.block(0, 3, 3, 1);
     float p41xz_2 = hypot(p41_2(0), p41_2(2));
 
-    T41m = calcA10(th1_2).inverse() * T60 * calcA65(th6_3).inverse() * calcA54(th5_3).inverse();
+    T41m = calcA10(real(th1_2)).inverse() * T60 * calcA65(real(th6_3)).inverse() * calcA54(real(th5_3)).inverse();
     p41_3 = T41m.block(0, 3, 3, 1);
     float p41xz_3 = hypot(p41_3(0), p41_3(2));
 
-    T41m = calcA10(th1_2).inverse() * T60 * calcA65(th6_4).inverse() * calcA54(th5_4).inverse();
+    T41m = calcA10(real(th1_2)).inverse() * T60 * calcA65(real(th6_4)).inverse() * calcA54(real(th5_4)).inverse();
     p41_4 = T41m.block(0, 3, 3, 1);
     float p41xz_4 = hypot(p41_4(0), p41_4(2));
 
     //Computation of the 8 possible values for th3
-    float th3_1 = acos((pow(p41xz_1, 2) - pow(A[1], 2) - pow(A[2], 2)) / (2 * A[1] * A[2]));
-    float th3_2 = acos((pow(p41xz_2, 2) - pow(A[1], 2) - pow(A[2], 2)) / (2 * A[1] * A[2]));
-    float th3_3 = acos((pow(p41xz_3, 2) - pow(A[1], 2) - pow(A[2], 2)) / (2 * A[1] * A[2]));
-    float th3_4 = acos((pow(p41xz_4, 2) - pow(A[1], 2) - pow(A[2], 2)) / (2 * A[1] * A[2]));
+    complex<float> th3_1 = real(acos((pow(p41xz_1, 2) - pow(A[1], 2) - pow(A[2], 2)) / (2 * A[1] * A[2])));
+    complex<float> th3_2 = real(acos((pow(p41xz_2, 2) - pow(A[1], 2) - pow(A[2], 2)) / (2 * A[1] * A[2])));
+    complex<float> th3_3 = real(acos((pow(p41xz_3, 2) - pow(A[1], 2) - pow(A[2], 2)) / (2 * A[1] * A[2])));
+    complex<float> th3_4 = real(acos((pow(p41xz_4, 2) - pow(A[1], 2) - pow(A[2], 2)) / (2 * A[1] * A[2])));
+    
+    complex<float> th3_5 = -th3_1;
+    complex<float> th3_6 = -th3_2;
+    complex<float> th3_7 = -th3_3;
+    complex<float> th3_8 = -th3_4;
 
-    float th3_5 = -th3_1;
-    float th3_6 = -th3_2;
-    float th3_7 = -th3_3;
-    float th3_8 = -th3_4;
+    complex<float> th2_1 = real(atan2(-p41_1(2), -p41_1(0))) - real(asin((-A[2] * real(sin(th3_1))) / p41xz_1));
+    complex<float> th2_2 = real(atan2(-p41_2(2), -p41_2(0))) - real(asin((-A[2] * real(sin(th3_2))) / p41xz_2));
+    complex<float> th2_3 = real(atan2(-p41_3(2), -p41_3(0))) - real(asin((-A[2] * real(sin(th3_3))) / p41xz_3));
+    complex<float> th2_4 = real(atan2(-p41_4(2), -p41_4(0))) - real(asin((-A[2] * real(sin(th3_4))) / p41xz_4));
 
-    //Computation of the 8 possible value for th2
-    float th2_1 = atan2(-p41_1(2), -p41_1(0)) - asin((-A[2] * sin(th3_1)) / p41xz_1);
-    float th2_2 = atan2(-p41_2(2), -p41_2(0)) - asin((-A[2] * sin(th3_2)) / p41xz_2);
-    float th2_3 = atan2(-p41_3(2), -p41_3(0)) - asin((-A[2] * sin(th3_3)) / p41xz_3);
-    float th2_4 = atan2(-p41_4(2), -p41_4(0)) - asin((-A[2] * sin(th3_4)) / p41xz_4);
-
-    float th2_5 = atan2(-p41_1(2), -p41_1(0)) - asin((A[2] * sin(th3_1)) / p41xz_1);
-    float th2_6 = atan2(-p41_2(2), -p41_2(0)) - asin((A[2] * sin(th3_2)) / p41xz_2);
-    float th2_7 = atan2(-p41_3(2), -p41_3(0)) - asin((A[2] * sin(th3_3)) / p41xz_3);
-    float th2_8 = atan2(-p41_4(2), -p41_4(0)) - asin((A[2] * sin(th3_4)) / p41xz_4);
+    complex<float> th2_5 = real(atan2(-p41_1(2), -p41_1(0))) - real(asin((A[2] * real(sin(th3_1))) / p41xz_1));
+    complex<float> th2_6 = real(atan2(-p41_2(2), -p41_2(0))) - real(asin((A[2] * real(sin(th3_2))) / p41xz_2));
+    complex<float> th2_7 = real(atan2(-p41_3(2), -p41_3(0))) - real(asin((A[2] * real(sin(th3_3))) / p41xz_3));
+    complex<float> th2_8 = real(atan2(-p41_4(2), -p41_4(0))) - real(asin((A[2] * real(sin(th3_4))) / p41xz_4));
 
     //Computation of the 8 possible value for th4
     MatrixXf T43m(4,4);
     MatrixXf Xhat43(1,4);
 
-    T43m = calcA32(th3_1).inverse() * calcA21(th2_1).inverse() * calcA10(th1_1).inverse() * T60 * calcA65(th6_1).inverse() * calcA54(th5_1).inverse();
+    T43m = calcA32(real(th3_1)).inverse() * calcA21(real(th2_1)).inverse() * calcA10(real(th1_1)).inverse() * T60 * calcA65(real(th6_1)).inverse() * calcA54(real(th5_1)).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_1 = atan2(Xhat43(1), Xhat43(0));
 
-    T43m = calcA32(th3_2).inverse() * calcA21(th2_2).inverse() * calcA10(th1_1).inverse() * T60 * calcA65(th6_2).inverse() * calcA54(th5_2).inverse();
+    T43m = calcA32(real(th3_2)).inverse() * calcA21(real(th2_2)).inverse() * calcA10(real(th1_1)).inverse() * T60 * calcA65(real(th6_2)).inverse() * calcA54(real(th5_2)).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_2 = atan2(Xhat43(1), Xhat43(0));
 
-    T43m = calcA32(th3_3).inverse() * calcA21(th2_3).inverse() * calcA10(th1_2).inverse() * T60 * calcA65(th6_3).inverse() * calcA54(th5_3).inverse();
+    T43m = calcA32(real(th3_3)).inverse() * calcA21(real(th2_3)).inverse() * calcA10(real(th1_2)).inverse() * T60 * calcA65(real(th6_3)).inverse() * calcA54(real(th5_3)).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_3 = atan2(Xhat43(1), Xhat43(0));
 
-    T43m = calcA32(th3_4).inverse() * calcA21(th2_4).inverse() * calcA10(th1_2).inverse() * T60 * calcA65(th6_4).inverse() * calcA54(th5_4).inverse();
+    T43m = calcA32(real(th3_4)).inverse() * calcA21(real(th2_4)).inverse() * calcA10(real(th1_2)).inverse() * T60 * calcA65(real(th6_4)).inverse() * calcA54(real(th5_4)).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_4 = atan2(Xhat43(1), Xhat43(0));
 
-    T43m = calcA32(th3_5).inverse() * calcA21(th2_5).inverse() * calcA10(th1_1).inverse() * T60 * calcA65(th6_1).inverse() * calcA54(th5_1).inverse();
+    T43m = calcA32(real(th3_5)).inverse() * calcA21(real(th2_5)).inverse() * calcA10(real(th1_1)).inverse() * T60 * calcA65(real(th6_1)).inverse() * calcA54(real(th5_1)).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_5 = atan2(Xhat43(1), Xhat43(0));
 
-    T43m = calcA32(th3_6).inverse() * calcA21(th2_6).inverse() * calcA10(th1_1).inverse() * T60 * calcA65(th6_2).inverse() * calcA54(th5_2).inverse();
+    T43m = calcA32(real(th3_6)).inverse() * calcA21(real(th2_6)).inverse() * calcA10(real(th1_1)).inverse() * T60 * calcA65(real(th6_2)).inverse() * calcA54(real(th5_2)).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_6 = atan2(Xhat43(1), Xhat43(0));
 
-    T43m = calcA32(th3_7).inverse() * calcA21(th2_7).inverse() * calcA10(th1_2).inverse() * T60 * calcA65(th6_3).inverse() * calcA54(th5_3).inverse();
+    T43m = calcA32(real(th3_7)).inverse() * calcA21(real(th2_7)).inverse() * calcA10(real(th1_2)).inverse() * T60 * calcA65(real(th6_3)).inverse() * calcA54(real(th5_3)).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_7 = atan2(Xhat43(1), Xhat43(0));
 
-    T43m = calcA32(th3_8).inverse() * calcA21(th2_8).inverse() * calcA10(th1_2).inverse() * T60 * calcA65(th6_4).inverse() * calcA54(th5_4).inverse();
+    T43m = calcA32(real(th3_8)).inverse() * calcA21(real(th2_8)).inverse() * calcA10(real(th1_2)).inverse() * T60 * calcA65(real(th6_4)).inverse() * calcA54(real(th5_4)).inverse();
     Xhat43 = T43m.block(0, 0, 3, 1);
     float th4_8 = atan2(Xhat43(1), Xhat43(0));
 
     //Reuslt of the inverse kinematics
     MatrixXf Th(8,6);
 
-    Th << th1_1, th2_1, th3_1, th4_1, th5_1, th6_1,
-          th1_1, th2_2, th3_2, th4_2, th5_2, th6_2,
-          th1_2, th2_3, th3_3, th4_3, th5_3, th6_3,
-          th1_2, th2_4, th3_4, th4_4, th5_4, th6_4,
-          th1_1, th2_5, th3_5, th4_5, th5_1, th6_1,
-          th1_1, th2_6, th3_6, th4_6, th5_2, th6_2,
-          th1_2, th2_7, th3_7, th4_7, th5_3, th6_3,
-          th1_2, th2_8, th3_8, th4_8, th5_4, th6_4;
-
-    //cout << Th << endl;
+    Th << real(th1_1), real(th2_1), real(th3_1), real(th4_1), real(th5_1), real(th6_1),
+          real(th1_1), real(th2_2), real(th3_2), real(th4_2), real(th5_2), real(th6_2),
+          real(th1_2), real(th2_3), real(th3_3), real(th4_3), real(th5_3), real(th6_3),
+          real(th1_2), real(th2_4), real(th3_4), real(th4_4), real(th5_4), real(th6_4),
+          real(th1_1), real(th2_5), real(th3_5), real(th4_5), real(th5_1), real(th6_1),
+          real(th1_1), real(th2_6), real(th3_6), real(th4_6), real(th5_2), real(th6_2),
+          real(th1_2), real(th2_7), real(th3_7), real(th4_7), real(th5_3), real(th6_3),
+          real(th1_2), real(th2_8), real(th3_8), real(th4_8), real(th5_4), real(th6_4);
 
     return Th;
 }

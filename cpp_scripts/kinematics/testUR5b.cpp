@@ -97,6 +97,8 @@ int main(int argc, char **argv){
     MatrixXf possibleDest(8,6);
     possibleDest = invKin(eePose);
 
+    cout << possibleDest << endl;
+
     MatrixXf test(1,6);
     test << 0, 0, 0, 0, 0, 0;
 
