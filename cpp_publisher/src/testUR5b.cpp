@@ -142,10 +142,11 @@ int main(int argc, char **argv){
             }
         }
 
+        //TODO dobbiamo pubblicare in questo ciclo senza la matrice Th 
         Th.row(Th.rows()-1) = TH.row(minDistRow);
     }
 
-    //cout << "Th: " << endl << Th << endl;
+    //cout << "Th: " << endl << Th << endl; //TODO matrice enorme non ottimizzata
     
     /*create message to publish*/
     std_msgs::Float64MultiArray msg;
