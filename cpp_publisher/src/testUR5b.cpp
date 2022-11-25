@@ -16,9 +16,9 @@ using Eigen::MatrixXf;
 
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
 MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation of the orientation
-void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate rate, ros::Publisher pub_des_jstate);//homing procedure
-void publish(Eigen::MatrixXf q, ros::Publisher pub); //publish the joint angles
-Eigen::MatrixXf toRotationMatrix(Eigen::Vector3f euler); //convert euler angles to rotation matrix
+void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate publish_rate, ros::Publisher pub_des_jstate); //moving procedure
+void publish(Eigen::MatrixXf publishPos, ros::Publisher pub_des_jstate, ros::Rate loop_rate); //publish the joint angles
+Eigen::MatrixXf toRotationMatrix(Eigen::MatrixXf euler); //convert euler angles to rotation matrix
 
 int main(int argc, char **argv){
 
@@ -30,78 +30,65 @@ int main(int argc, char **argv){
 
     EEPose eePose;
 
-    //initial joint angles
+    /*initial joint angles*/
     MatrixXf Th0(1,6);
-    Th0 << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //homing procedure
+    Th0 << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //homing procedure joint angles
 
-    //calc initial end effector pose
+    /*target position*/
+    MatrixXf xef(1,3); //postion
+    MatrixXf phief(1,3); //orientation
+    xef << 0.5, -0.5, 0.5; //0.3, -0.11, 0.68;
+    phief << 0, 0, 0;
+
+    /*calc initial end effector pose*/
     eePose = fwKin(Th0);
 
-    //from rotation matrix to euler angles
+    /*calc distance between initial and target position*/
+    float targetDist = sqrt(pow( xef(0,0) - eePose.Pe(0,0), 2 ) + pow( xef(0,1) - eePose.Pe(1,0), 2 ) + pow( xef(0,2) - eePose.Pe(2,0), 2 ));
+    float step = targetDist / 100; //step size
+    // cout << "targetDist: " << targetDist << endl;
+    // cout << "step: " << step << endl;
+
+
+    /*from rotation matrix to euler angles*/
     MatrixXf phie0;
     Eigen::Matrix3f tmp;
     tmp = eePose.Re;
-    phie0 = tmp.eulerAngles(0,1,2); //il risultato è un po' diverso da quello di matlab
+    phie0 = tmp.eulerAngles(0,1,2);
     //cout << "phie0: " << endl << phie0 << endl;
 
-    //target position
-    MatrixXf xef(1,3); //postion
-    MatrixXf phief(1,3); //orientation
-    xef << 0.3, -0.11, 0.68;  //potential position of the brick relative to world frame
-    phief << 0, 0, 0;
- 
-    MatrixXf x(1,3);
-    MatrixXf phi(1,3);
-    MatrixXf TH(8,6);
-    MatrixXf Th(1,6);
-    Th = Th0;
+    /**/
+    MatrixXf x(1,3); //position
+    MatrixXf phi(1,3); //orientation
+    Eigen::Matrix3f rotM; //rotation matrix
+    MatrixXf TH(8,6); //joint angles
+    MatrixXf currentPos(1,6); //current joint angles
     EEPose eePose1;
 
-    /***********MANDA I DATI VIOLENTI/***********/
-    /*from euler angles to rotation matrix*/
-    // Eigen::Matrix3f m;
-    // m = Eigen::AngleAxisf(phief(0), Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf(phief(1), Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(phief(2), Eigen::Vector3f::UnitX());    
-    
-    // eePose1.Pe = xef;
-    // eePose1.Re = m;
+    /*current position equals to homing procedure position*/
+    currentPos = Th0;
 
-    // TH = invKin(eePose1);
+    /*create message to publish*/
+    std_msgs::Float64MultiArray msg;
+    msg.data.resize(9); //6 joint angles + 3 end effector joints
+    msg.data.assign(9,0); //empty the msg
 
-    // cout << "TH: " << endl << TH << endl;
-
-    // std_msgs::Float64MultiArray msg;
-    // msg.data.resize(9); //6 joint angles + 3 end effector joints
-    // msg.data.assign(9,0); //empty the msg
-
-    // for(int i=0; i<6; i++){
-    //     msg.data[i] = TH(0,i);
-    // }
-
-    // while(ros::ok){
-    //     pub_des_jstate.publish(msg);
-    //     ros::spinOnce();
-    //     loop_rate.sleep();
-    // }
-    /********************************************/
-
-    for(float t=0; t<=1; t += 0.01){
+    /*loop to calculate and publish the joint angles*/
+    for(float t=0; t<=1; t+=step){
 
         x = xe(t, xef, eePose.Pe); //linear interpolation of the position
         phi = phie(t, phief, phie0); //linear intepolation of the orientation
         x.transposeInPlace();
         
-        //from euler angles to rotation matrix
-        Eigen::Matrix3f m;
-        m = Eigen::AngleAxisf(phi(0), Eigen::Vector3f::UnitZ())*
-            Eigen::AngleAxisf(phi(1), Eigen::Vector3f::UnitY())*
-            Eigen::AngleAxisf(phi(2), Eigen::Vector3f::UnitX());
+        /*from euler angles to rotation matrix*/
+        rotM = toRotationMatrix(phi);
 
         //cout << "phi: " << endl << phi << endl;
-        //cout << "m: " << endl << m << endl;
+        //cout << "rotM: " << endl << rotM << endl;
 
-        //save the result in the end effector struct
+        /*save the result in the end effector struct*/
         eePose1.Pe = x;
-        eePose1.Re = m;
+        eePose1.Re = rotM;
         
         /*inverse kinematics*/
         TH = invKin(eePose1);
@@ -110,11 +97,10 @@ int main(int argc, char **argv){
         /*check nan and minimum distance*/
         MatrixXf minSol(1,6);
         bool use = true;
+        int minDistRow= 0;
         float dist = 0.;
         float minDist= 10000.;
-        int minDistRow= 0;
 
-        Th.conservativeResize(Th.rows()+1, Th.cols());
         for(int i=0; i<8; i++){
             use = true;
             for(int j=0; j<6; j++){
@@ -125,12 +111,9 @@ int main(int argc, char **argv){
             }
 
             if(use){
-                if(Th.rows() == 1){
-                    minSol = TH.row(i) - Th.row(Th.rows()-1);
-                }else{
-                    minSol = TH.row(i) - Th.row(Th.rows()-2);
-                }
-                //calculate the average distance between the joints
+                minSol = TH.row(i) - currentPos;
+
+                /*calculate the average distance between the joints*/
                 for(int j=0; j<6; j++){
                     dist += abs(minSol(0,j));
                 }
@@ -142,54 +125,14 @@ int main(int argc, char **argv){
             }
         }
 
-        //TODO dobbiamo pubblicare in questo ciclo senza la matrice Th 
-        Th.row(Th.rows()-1) = TH.row(minDistRow);
+        /*save in current position the best solution of inverse kinemtics*/
+        currentPos = TH.row(minDistRow);
+
+        /*ROS loop*/
+        publish(currentPos, pub_des_jstate, loop_rate);
     }
 
-    //cout << "Th: " << endl << Th << endl; //TODO matrice enorme non ottimizzata
-    
-    /*create message to publish*/
-    std_msgs::Float64MultiArray msg;
-    msg.data.resize(9); //6 joint angles + 3 end effector joints
-
-    /*ROS loop*/
-    while(ros::ok){
-        
-        msg.data.assign(9,0); //empty the msg
-
-        for(int i=0; i<Th.rows(); i++){
-            for(int j=0; j<6; j++){
-                msg.data[j] = Th(i,j);
-            }
-
-            pub_des_jstate.publish(msg); //publish the msg
-
-            ros::spinOnce(); //allow data update from callback
-            loop_rate.sleep(); //sleep for the time remaining to let us hit our 1000Hz publish rate
-        }
-
-        break;
-    }
-
-    /*find the row of possibleDest with the minimum distance from Th0*/
-    // MatrixXf possibleDest(8,6);
-    // MatrixXf minSol(1,6);
-    // possibleDest = invKin(eePose);
-    // float minDist=0.0;
-    // int minDistRow=0;
-    // float dist=0.0;
-    // for(int i=0; i<6; i++){
-    //     minSol = possibleDest.row(i) - Th0;
-    //     dist = minSol.norm();
-    //     if(dist < minDist){
-    //         minDist = dist;
-    //         minDistRow = i;
-    //     }
-    // }
-
-    // cout << "Selected joint mode: " << possibleDest.row(minDistRow) << endl;
-
-    // homingProcedure(0.001, 0.6, possibleDest.row(minDistRow), Th0, loop_rate,pub_des_jstate);
+    // movingProcedure(0.001, 0.6, possibleDest.row(minDistRow), Th0, loop_rate,pub_des_jstate);
 
     return 0;
 }
@@ -200,15 +143,14 @@ int main(int argc, char **argv){
  * @param euler 
  * @return Eigen::MatrixXf 
  */
-
-Eigen::MatrixXf toRotationMatrix(Eigen::Vector3f euler){
+Eigen::MatrixXf toRotationMatrix(Eigen::MatrixXf euler){
     Eigen::Matrix3f m;
     m = Eigen::AngleAxisf(euler(0), Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf(euler(1), Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf(euler(2), Eigen::Vector3f::UnitX());
     return m;
 }
 
 /**
- * @brief using homingProcedure template to get to a desired position
+ * @brief using movingProcedure template to get to a desired position
  * 
  * @param dt 
  * @param vDes 
@@ -217,7 +159,7 @@ Eigen::MatrixXf toRotationMatrix(Eigen::Vector3f euler){
  * @param rate 
  * @return Eigen::MatrixXf 
  */
-void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate rate, ros::Publisher pub_des_jstate){
+void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate publish_rate, ros::Publisher pub_des_jstate){
 
     cout << "HOMING PROCEDURE STARTED" << endl;
 
@@ -230,8 +172,8 @@ void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Ra
         errorNorm = error.norm();
         vRef += 0.005*(vDes-vRef);
         qRef += dt*vRef*error/errorNorm;
-        publish(qRef, pub_des_jstate);
-        rate.sleep();
+        publish(qRef, pub_des_jstate, publish_rate);
+        publish_rate.sleep();
         ros::spinOnce(); 
     }while(errorNorm > 0.001);
 
@@ -241,19 +183,28 @@ void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Ra
 /**
  * @brief publish the desired joint state
  * 
- * @param qRef 
+ * @param publishPos 
  * @param pub_des_jstate 
  */
-void publish(MatrixXf qRef, ros::Publisher pub_des_jstate){
+void publish(MatrixXf publishPos, ros::Publisher pub_des_jstate, ros::Rate loop_rate){
 
     std_msgs::Float64MultiArray msg;
     msg.data.resize(9); //6 joint angles + 3 end effector joints
+    msg.data.assign(9,0); //empty the msg
 
-    for(int i=0; i<6; i++){
-        msg.data.at(i) = qRef(0,i);
+    while(ros::ok){
+
+        for(int i=0; i<publishPos.cols(); i++){
+            msg.data[i] = publishPos(0,i);
+        }
+
+        pub_des_jstate.publish(msg); //publish the message
+
+        ros::spinOnce();   // allow data update from callback
+        loop_rate.sleep(); // sleep for the time remaining to let us hit our 1000Hz publish rate
+
+        break;
     }
-
-    pub_des_jstate.publish(msg); //publish the message
 }
 
 /**

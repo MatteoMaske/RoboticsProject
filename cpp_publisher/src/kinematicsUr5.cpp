@@ -115,16 +115,17 @@ MatrixXf calcA65(float Th5){
 EEPose fwKin(MatrixXf Th){
 
     MatrixXf A60(4, 4);
-    MatrixXf Re(4,4);
-    MatrixXf Pe(1,4);
+    MatrixXf Re(3,3);
+    MatrixXf Pe(1,3);
 
     A60 = calcA10(Th(0)) * calcA21(Th(1)) * calcA32(Th(2)) * calcA43(Th(3)) * calcA54(Th(4)) * calcA65(Th(5));
 
     Pe = A60.block(0,3,3,1);
     Re = A60.block(0,0,3,3);
 
-    //cout << Pe << endl;
-    //cout << Re << endl;
+    // cout << "A60: " << A60 << endl;
+    // cout << "Pe: " << endl << Pe << endl;
+    // cout << "Re: " << endl << Re << endl;
 
     EEPose eePose;
     eePose.Pe = Pe;
