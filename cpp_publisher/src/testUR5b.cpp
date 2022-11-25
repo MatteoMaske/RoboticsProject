@@ -8,17 +8,12 @@
 using namespace std;
 using Eigen::MatrixXf;
 
-//struct model
-/*struct EEPose{
-    MatrixXf Pe;
-    MatrixXf Re;
-};*/
-
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
 MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation of the orientation
 void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate publish_rate, ros::Publisher pub_des_jstate); //moving procedure
 void publish(Eigen::MatrixXf publishPos, ros::Publisher pub_des_jstate, ros::Rate loop_rate); //publish the joint angles
 Eigen::MatrixXf toRotationMatrix(Eigen::MatrixXf euler); //convert euler angles to rotation matrix
+void computeMovement(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation, ros::Publisher pub_des_jstate, ros::Rate loop_rate);//compute the movement
 
 int main(int argc, char **argv){
 
@@ -28,36 +23,48 @@ int main(int argc, char **argv){
     ros::Publisher pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1);
     ros::Rate loop_rate(1000);
 
-    EEPose eePose;
-
     /*initial joint angles*/
     MatrixXf Th0(1,6);
     Th0 << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //homing procedure joint angles
 
-    /*target position*/
-    MatrixXf xef(1,3); //postion
-    MatrixXf phief(1,3); //orientation
-    xef << 0.5, -0.5, 0.5; //0.3, -0.11, 0.68;
+    /*target position and orientation*/
+    MatrixXf xef(1,3);
+    MatrixXf phief(1,3); 
+    xef << 0.35, -0.15, 0.70;// 0.5, -0.5, 0.5;
     phief << 0, 0, 0;
+
+    computeMovement(Th0, xef, phief, pub_des_jstate, loop_rate);
+
+    return 0;
+}
+
+/**
+ * @brief compute the movement without controlling the velocity
+ * 
+ * @param Th0 
+ * @param targetPosition 
+ * @param targetOrientation 
+ * @param pub_des_jstate 
+ * @param loop_rate 
+ */
+
+void computeMovement(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation, ros::Publisher pub_des_jstate, ros::Rate loop_rate){
+
+    EEPose eePose;
 
     /*calc initial end effector pose*/
     eePose = fwKin(Th0);
 
     /*calc distance between initial and target position*/
-    float targetDist = sqrt(pow( xef(0,0) - eePose.Pe(0,0), 2 ) + pow( xef(0,1) - eePose.Pe(1,0), 2 ) + pow( xef(0,2) - eePose.Pe(2,0), 2 ));
+    float targetDist = sqrt(pow( targetPosition(0,0) - eePose.Pe(0,0), 2 ) + pow( targetPosition(0,1) - eePose.Pe(1,0), 2 ) + pow( targetPosition(0,2) - eePose.Pe(2,0), 2 ));
     float step = targetDist / 100; //step size
-    // cout << "targetDist: " << targetDist << endl;
-    // cout << "step: " << step << endl;
-
 
     /*from rotation matrix to euler angles*/
     MatrixXf phie0;
     Eigen::Matrix3f tmp;
     tmp = eePose.Re;
     phie0 = tmp.eulerAngles(0,1,2);
-    //cout << "phie0: " << endl << phie0 << endl;
 
-    /**/
     MatrixXf x(1,3); //position
     MatrixXf phi(1,3); //orientation
     Eigen::Matrix3f rotM; //rotation matrix
@@ -73,18 +80,17 @@ int main(int argc, char **argv){
     msg.data.resize(9); //6 joint angles + 3 end effector joints
     msg.data.assign(9,0); //empty the msg
 
+    cout << "Moving to target -> " << targetPosition << endl;
+
     /*loop to calculate and publish the joint angles*/
     for(float t=0; t<=1; t+=step){
 
-        x = xe(t, xef, eePose.Pe); //linear interpolation of the position
-        phi = phie(t, phief, phie0); //linear intepolation of the orientation
+        x = xe(t, targetPosition, eePose.Pe); //linear interpolation of the position
+        phi = phie(t, targetOrientation, phie0); //linear intepolation of the orientation
         x.transposeInPlace();
         
         /*from euler angles to rotation matrix*/
         rotM = toRotationMatrix(phi);
-
-        //cout << "phi: " << endl << phi << endl;
-        //cout << "rotM: " << endl << rotM << endl;
 
         /*save the result in the end effector struct*/
         eePose1.Pe = x;
@@ -92,7 +98,6 @@ int main(int argc, char **argv){
         
         /*inverse kinematics*/
         TH = invKin(eePose1);
-        //cout << "TH: " << endl << TH << endl;
 
         /*check nan and minimum distance*/
         MatrixXf minSol(1,6);
@@ -102,6 +107,7 @@ int main(int argc, char **argv){
         float minDist= 10000.;
 
         for(int i=0; i<8; i++){
+            
             use = true;
             for(int j=0; j<6; j++){
                 if(isnan(TH(i,j))){
@@ -109,7 +115,6 @@ int main(int argc, char **argv){
                     break;
                 }
             }
-
             if(use){
                 minSol = TH.row(i) - currentPos;
 
@@ -132,9 +137,10 @@ int main(int argc, char **argv){
         publish(currentPos, pub_des_jstate, loop_rate);
     }
 
-    // movingProcedure(0.001, 0.6, possibleDest.row(minDistRow), Th0, loop_rate,pub_des_jstate);
+    MatrixXf closeGripper(1,9);
+    closeGripper << currentPos(0,0), currentPos(0,1), currentPos(0,2), currentPos(0,3), currentPos(0,4), currentPos(0,5), 2.0, 2.0, 2.0;
+    publish(closeGripper, pub_des_jstate, loop_rate);
 
-    return 0;
 }
 
 /**
@@ -150,7 +156,7 @@ Eigen::MatrixXf toRotationMatrix(Eigen::MatrixXf euler){
 }
 
 /**
- * @brief using movingProcedure template to get to a desired position
+ * @brief using movingProcedure of ur5generic.py template to get to a desired position
  * 
  * @param dt 
  * @param vDes 
@@ -161,7 +167,7 @@ Eigen::MatrixXf toRotationMatrix(Eigen::MatrixXf euler){
  */
 void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate publish_rate, ros::Publisher pub_des_jstate){
 
-    cout << "HOMING PROCEDURE STARTED" << endl;
+    cout << "MOVING PROCEDURE STARTED" << endl;
 
     Eigen::MatrixXf error (1,6);
     float errorNorm = 0.0;

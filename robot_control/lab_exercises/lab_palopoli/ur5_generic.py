@@ -226,21 +226,16 @@ class Ur5Generic(BaseControllerFixed):
         v_ref = 0.0
         print(colored("STARTING HOMING PROCEDURE", 'red'))
         self.q_des = np.copy(self.q)
-        print(colored("INITIAL POSITION = ",'blue'))
-        print(self.q_des)
         print("Initial joint error = ", np.linalg.norm(self.q_des - q_home))
         print("q = ", self.q.T)
         print("Homing v des", v_des)
-        i=0
+
         while True:
             e = q_home - self.q_des
             e_norm = np.linalg.norm(e)
             if (e_norm != 0.0):
                 v_ref += 0.005 * (v_des - v_ref)
                 self.q_des += dt * v_ref * e / e_norm
-                if(i < 100):
-                    print("q_des = ",self.q_des.T)
-                    i+=1
                 self.send_reduced_des_jstate(self.q_des)
             rate.sleep()
             if (e_norm < 0.001):
