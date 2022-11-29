@@ -5,23 +5,31 @@
 #include "ros/ros.h"
 #include "kinematicsUr5.cpp"
 
+#define LOOPRATE 1000 //rate of ros loop
+
 using namespace std;
 using Eigen::MatrixXf;
 
+//=======GLOBAL VARIABLES=======
+ros::Publisher pub_des_jstate; //publish desired joint state
+
+//=======FUNCTION DECLARATION=======
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
 MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0); //linear interpolation of the orientation
-void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate publish_rate, ros::Publisher pub_des_jstate); //moving procedure
-void publish(Eigen::MatrixXf publishPos, ros::Publisher pub_des_jstate, ros::Rate loop_rate); //publish the joint angles
 Eigen::MatrixXf toRotationMatrix(Eigen::MatrixXf euler); //convert euler angles to rotation matrix
-void computeMovement(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation, ros::Publisher pub_des_jstate, ros::Rate loop_rate);//compute the movement
+void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Publisher pub_des_jstate); //moving procedure
+void publish(Eigen::MatrixXf publishPos, ros::Publisher pub_des_jstate); //publish the joint angles
+void computeMovement(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation, ros::Publisher pub_des_jstate);//compute the movement
+void closeGripper(MatrixXf currentPos);
+void openGripper(MatrixXf currentPos);
 
+//=======MAIN FUNCTION=======
 int main(int argc, char **argv){
 
     //ROS initialization
     ros::init(argc, argv, "testUR5b");
     ros::NodeHandle node;
-    ros::Publisher pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1);
-    ros::Rate loop_rate(1000);
+    pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1); //publisher for desired joint state
 
     /*initial joint angles*/
     MatrixXf Th0(1,6);
@@ -33,7 +41,7 @@ int main(int argc, char **argv){
     xef << 0.35, -0.15, 0.70;// 0.5, -0.5, 0.5;
     phief << 0, 0, 0;
 
-    computeMovement(Th0, xef, phief, pub_des_jstate, loop_rate);
+    computeMovement(Th0, xef, phief, pub_des_jstate);
 
     return 0;
 }
@@ -45,10 +53,8 @@ int main(int argc, char **argv){
  * @param targetPosition 
  * @param targetOrientation 
  * @param pub_des_jstate 
- * @param loop_rate 
  */
-
-void computeMovement(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation, ros::Publisher pub_des_jstate, ros::Rate loop_rate){
+void computeMovement(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation, ros::Publisher pub_des_jstate){
 
     EEPose eePose;
 
@@ -134,13 +140,11 @@ void computeMovement(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrien
         currentPos = TH.row(minDistRow);
 
         /*ROS loop*/
-        publish(currentPos, pub_des_jstate, loop_rate);
+        publish(currentPos, pub_des_jstate);
     }
 
-    MatrixXf closeGripper(1,9);
-    closeGripper << currentPos(0,0), currentPos(0,1), currentPos(0,2), currentPos(0,3), currentPos(0,4), currentPos(0,5), 2.0, 2.0, 2.0;
-    publish(closeGripper, pub_des_jstate, loop_rate);
-
+    /*close the gripper when in position*/
+    closeGripper(currentPos);
 }
 
 /**
@@ -162,12 +166,13 @@ Eigen::MatrixXf toRotationMatrix(Eigen::MatrixXf euler){
  * @param vDes 
  * @param qDes 
  * @param qRef
- * @param rate 
  * @return Eigen::MatrixXf 
  */
-void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Rate publish_rate, ros::Publisher pub_des_jstate){
+void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Publisher pub_des_jstate){
 
     cout << "MOVING PROCEDURE STARTED" << endl;
+
+    ros::Rate loop_rate(LOOPRATE); //rate of the loop
 
     Eigen::MatrixXf error (1,6);
     float errorNorm = 0.0;
@@ -178,12 +183,12 @@ void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Ra
         errorNorm = error.norm();
         vRef += 0.005*(vDes-vRef);
         qRef += dt*vRef*error/errorNorm;
-        publish(qRef, pub_des_jstate, publish_rate);
-        publish_rate.sleep();
+        publish(qRef, pub_des_jstate);
+        loop_rate.sleep();
         ros::spinOnce(); 
     }while(errorNorm > 0.001);
 
-    //cout << "HOMING PROCEDURE COMPLETED" << endl;
+    cout << "HOMING PROCEDURE COMPLETED" << endl;
 }
 
 /**
@@ -192,25 +197,59 @@ void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Ra
  * @param publishPos 
  * @param pub_des_jstate 
  */
-void publish(MatrixXf publishPos, ros::Publisher pub_des_jstate, ros::Rate loop_rate){
+void publish(MatrixXf publishPos, ros::Publisher pub_des_jstate){
+
+    std_msgs::Float64MultiArray msg;
+    msg.data.resize(9); //6 joint angles + 3 end effector joints
+    msg.data.assign(9,0); //empty the msg
+    ros::Rate loop_rate(LOOPRATE);
+
+    for (int i = 0; i < publishPos.cols(); i++){
+        msg.data[i] = publishPos(0, i);
+    }
+
+    pub_des_jstate.publish(msg); // publish the message
+
+    ros::spinOnce();   // allow data update from callback
+    loop_rate.sleep(); // sleep for the time remaining to let us hit our 1000Hz publish rate
+}
+
+/**
+ * @brief close the gripper
+ * 
+ * @param currentPos 
+ */
+void closeGripper(MatrixXf currentPos){
 
     std_msgs::Float64MultiArray msg;
     msg.data.resize(9); //6 joint angles + 3 end effector joints
     msg.data.assign(9,0); //empty the msg
 
-    while(ros::ok){
-
-        for(int i=0; i<publishPos.cols(); i++){
-            msg.data[i] = publishPos(0,i);
-        }
-
-        pub_des_jstate.publish(msg); //publish the message
-
-        ros::spinOnce();   // allow data update from callback
-        loop_rate.sleep(); // sleep for the time remaining to let us hit our 1000Hz publish rate
-
-        break;
+    for(int i=0; i<6; i++){
+        msg.data[i] = currentPos(0,i); //keep same joint angles
     }
+    msg.data[6] = 2; msg.data[7] = 2.; msg.data[8] = 2.; //close the gripper
+
+    pub_des_jstate.publish(msg); //publish the message
+}
+
+/**
+ * @brief open the gripper
+ * 
+ * @param currentPos 
+ */
+void openGripper(MatrixXf currentPos){
+
+    std_msgs::Float64MultiArray msg;
+    msg.data.resize(9); //6 joint angles + 3 end effector joints
+    msg.data.assign(9,0); //empty the msg
+
+    for(int i=0; i<6; i++){
+        msg.data[i] = currentPos(0,i); //keep same joint angles
+    }
+    msg.data[6] = 0.; msg.data[7] = 0.; msg.data[8] = 0.; //open the gripper
+
+    pub_des_jstate.publish(msg); //publish the message
 }
 
 /**
