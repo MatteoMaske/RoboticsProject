@@ -3,10 +3,25 @@ import bpy
 import numpy as np
 import math as m
 import random
-
+import signal
+import os
 blocks = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
                           'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
 current_block = 'X1-Y1-Z2' # block currently processing
+images_filepath = '/Users/amirgheser/Robotics/RoboticsProject/dataset/images'
+labels_filepath = '/Users/amirgheser/Robotics/RoboticsProject/dataset/labels'
+
+def handler(signum, frame):
+    print('Clearing dataset folder')
+    for file in os.listdir(images_filepath):
+        os.remove(os.path.join(images_filepath, file))
+    for file in os.listdir(labels_filepath):
+        os.remove(os.path.join(labels_filepath, file))
+    f = open("progress_report.txt", "w")
+    f.close()
+    exit(1)
+ 
+
 ## Main Class
 class Render:
     def __init__(self):
@@ -28,8 +43,8 @@ class Render:
         
         ## Output information
         # Input your own preferred location for the images and labels
-        self.images_filepath = '/Users/amirgheser/Robotics/RoboticsProject/dataset/images'
-        self.labels_filepath = '/Users/amirgheser/Robotics/RoboticsProject/dataset/labels'
+        self.images_filepath = images_filepath
+        self.labels_filepath = labels_filepath
 
     def set_camera(self):
         self.axis.rotation_euler = (0, 0, 0)
@@ -292,6 +307,7 @@ class Render:
 
 ## Run data generation
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, handler)
     # Initialize rendering class as r
     for block in blocks:
         bpy.data.objects[block].location.x = 1000
