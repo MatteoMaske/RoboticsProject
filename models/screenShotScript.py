@@ -89,44 +89,45 @@ class Render:
 
                     for gamma in range(self.gamma_limits[0], self.gamma_limits[1] + 1, rotation_step): # Loop to vary the angle gamma
                         render_counter += 1 # Update counter
-                        
-                        ## Update the rotation of the axis
-                        axis_rotation = (m.radians(beta_r), 0, m.radians(gamma)) 
-                        self.axis.rotation_euler = axis_rotation # Assign rotation to <bpy.data.objects['Empty']> object
-                        # Display demo information - Location of the camera
-                        print("On render:", render_counter)
-                        print("--> Location of the camera:")
-                        print("     d:", d/10, "m")
-                        print("     Beta:", str(beta_r)+"Degrees")
-                        print("     Gamma:", str(gamma)+"Degrees")
+                        for _ in range(4):
+                            self.objetcs[0].rotation_euler = (90, 0, 0)
+                            ## Update the rotation of the axis
+                            axis_rotation = (m.radians(beta_r), 0, m.radians(gamma)) 
+                            self.axis.rotation_euler = axis_rotation # Assign rotation to <bpy.data.objects['Empty']> object
+                            # Display demo information - Location of the camera
+                            print("On render:", render_counter)
+                            print("--> Location of the camera:")
+                            print("     d:", d/10, "m")
+                            print("     Beta:", str(beta_r)+"Degrees")
+                            print("     Gamma:", str(gamma)+"Degrees")
 
-                        ## Configure lighting
-                        energy1 = random.randint(0, 30) # Grab random light intensity
-                        self.light_1.data.energy = energy1 # Update the <bpy.data.objects['Light']> energy information
-                        energy2 = random.randint(4, 20) # Grab random light intensity
-                        self.light_2.data.energy = energy2 # Update the <bpy.data.objects['Light2']> energy information
+                            ## Configure lighting
+                            energy1 = random.randint(0, 30) # Grab random light intensity
+                            self.light_1.data.energy = energy1 # Update the <bpy.data.objects['Light']> energy information
+                            energy2 = random.randint(4, 20) # Grab random light intensity
+                            self.light_2.data.energy = energy2 # Update the <bpy.data.objects['Light2']> energy information
 
-                        ## Generate render
-                        self.render_blender(render_counter) # Take photo of current scene and ouput the render_counter.png file
-                        # Display demo information - Photo information
-                        print("--> Picture information:")
-                        print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
-                        print("     Rendering samples:", self.samples)
+                            ## Generate render
+                            self.render_blender(render_counter) # Take photo of current scene and ouput the render_counter.png file
+                            # Display demo information - Photo information
+                            print("--> Picture information:")
+                            print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
+                            print("     Rendering samples:", self.samples)
 
-                        ## Output Labels
-                        text_file_name = self.labels_filepath + '/' + str(render_counter) + '.txt' # Create label file name
-                        text_file = open(text_file_name, 'w+') # Open .txt file of the label
-                        # Get formatted coordinates of the bounding boxes of all the objects in the scene
-                        # Display demo information - Label construction
-                        print("---> Label Construction")
-                        text_coordinates = self.get_all_coordinates()
-                        splitted_coordinates = text_coordinates.split('\n')[:-1] # Delete last '\n' in coordinates
-                        text_file.write('\n'.join(splitted_coordinates)) # Write the coordinates to the text file and output the render_counter.txt file
-                        text_file.close() # Close the .txt file corresponding to the label
- 
-                        ## Show progress on batch of renders
-                        print('Progress =', str(render_counter) + '/' + str(n_renders))
-                        report.write('Progress: ' + str(render_counter) + ' Rotation: ' + str(axis_rotation) + ' z_d: ' + str(d / 10) + '\n')
+                            ## Output Labels
+                            text_file_name = self.labels_filepath + '/' + str(render_counter) + '.txt' # Create label file name
+                            text_file = open(text_file_name, 'w+') # Open .txt file of the label
+                            # Get formatted coordinates of the bounding boxes of all the objects in the scene
+                            # Display demo information - Label construction
+                            print("---> Label Construction")
+                            text_coordinates = self.get_all_coordinates()
+                            splitted_coordinates = text_coordinates.split('\n')[:-1] # Delete last '\n' in coordinates
+                            text_file.write('\n'.join(splitted_coordinates)) # Write the coordinates to the text file and output the render_counter.txt file
+                            text_file.close() # Close the .txt file corresponding to the label
+
+                            ## Show progress on batch of renders
+                            print('Progress =', str(render_counter) + '/' + str(n_renders))
+                            report.write('Progress: ' + str(render_counter) + ' Rotation: ' + str(axis_rotation) + ' z_d: ' + str(d / 10) + '\n')
 
             report.close() # Close the .txt file corresponding to the report
 
