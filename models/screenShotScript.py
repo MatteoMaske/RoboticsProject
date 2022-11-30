@@ -58,7 +58,7 @@ class Render:
         rotation step as input, and outputs the images and the labels to the above specified locations.
         '''
         ## Calculate the number of images and labels to generate
-        n_renders = self.calculate_n_renders(rot_step) # Calculate number of images
+        n_renders = 4*self.calculate_n_renders(rot_step) # Calculate number of images
         print('Number of renders to create:', n_renders)
 
         accept_render = input('\nContinue?[Y/N]:  ') # Ask whether to procede with the data generation
@@ -88,9 +88,9 @@ class Render:
                     beta_r = (-1)*beta + 90 # Re-factor the current beta
 
                     for gamma in range(self.gamma_limits[0], self.gamma_limits[1] + 1, rotation_step): # Loop to vary the angle gamma
-                        render_counter += 1 # Update counter
                         for _ in range(4):
-                            self.objects[0].rotation_euler = (m.radians(90), 0, 0)
+                            render_counter += 1 # Update counter
+                            self.objects[0].rotation_euler = (0, m.radians(90), 0)
                             ## Update the rotation of the axis
                             axis_rotation = (m.radians(beta_r), 0, m.radians(gamma)) 
                             self.axis.rotation_euler = axis_rotation # Assign rotation to <bpy.data.objects['Empty']> object
