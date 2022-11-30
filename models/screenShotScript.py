@@ -4,8 +4,17 @@ import numpy as np
 import math as m
 import random
 
-blocks = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
+blocks = ['X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
                           'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
+
+colors = [(0.0, 0.0, 0.0, 1.0),
+    (0.0, 0.0, 1.0, 1.0),
+    (0.0, 1.0, 0.0, 1.0),
+    (0.0, 1.0, 1.0, 1.0),
+    (1.0, 0.0, 0.0, 1.0),
+    (1.0, 0.0, 1.0, 1.0),
+    (1.0, 1.0, 0.0, 1.0), 
+    (1.0, 1.0, 1.0, 1.0)]
 
 ## Main Class
 class Render:
@@ -18,7 +27,7 @@ class Render:
         self.axis = bpy.data.objects['Main Axis']
         self.light_1 = bpy.data.objects['Light1']
         self.light_2 = bpy.data.objects['Light2']
-        self.obj_names = blocks[4]
+        self.obj_names = [blocks[0]]
         self.objects = self.create_objects() # Create list of bpy.data.objects from bpy.data.objects[1] to bpy.data.objects[N]
 
         ## Render information
@@ -28,8 +37,8 @@ class Render:
         
         ## Output information
         # Input your own preferred location for the images and labels
-        self.images_filepath = f'/home/stefano/modelliMegaBlocks/megaBlockSet/sets/{self.obj_names}'
-        self.labels_filepath = f'/home/stefano/modelliMegaBlocks/megaBlockSet/sets/{self.obj_names}/labels'
+        self.images_filepath = f'/Users/amirgheser/Robotics/dataset/{self.obj_names[0]}'
+        self.labels_filepath = f'/Users/amirgheser/Robotics/dataset/{self.obj_names[0]}/labels'
 
     def set_camera(self):
         self.axis.rotation_euler = (0, 0, 0)
@@ -59,6 +68,11 @@ class Render:
             # Define the step with which the pictures are going to be taken
             rotation_step = rot_step
 
+            # Create material to change the color of the object
+            mat = bpy.data.materials.new(name= 'colored')
+            ico = self.objects[0]
+            ico.active_material = mat
+
             # Begin nested loops
             for d in range(dmin, dmax + 1, 2): # Loop to vary the height of the camera
                 ## Update the height of the camera
@@ -74,6 +88,9 @@ class Render:
                     for gamma in range(self.gamma_limits[0], self.gamma_limits[1] + 1, rotation_step): # Loop to vary the angle gamma
                         render_counter += 1 # Update counter
                         
+                        ## Change block color
+                        mat.diffuse_color = random.choice(colors)
+
                         ## Update the rotation of the axis
                         axis_rotation = (m.radians(beta_r), 0, m.radians(gamma)) 
                         self.axis.rotation_euler = axis_rotation # Assign rotation to <bpy.data.objects['Empty']> object
@@ -297,5 +314,5 @@ if __name__ == '__main__':
     # Initialize camera
     r.set_camera()
     # Begin data generation
-    rotation_step = 100
+    rotation_step = 2
     r.main_rendering_loop(rotation_step)
