@@ -3,22 +3,6 @@ import bpy
 import numpy as np
 import math as m
 import random
-import signal
-import os
-blocks = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
-                          'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
-current_block = 'X1-Y1-Z2' # block currently processing
-images_filepath = '/home/stefano/modelliMegaBlocks/megaBlockSet/sets/X1-Y1-Z2'
-labels_filepath = '/home/stefano/modelliMegaBlocks/megaBlockSet/sets/X1-Y1-Z2/labels'
-
-def handler(signum, frame):
-    print('Clearing dataset folder')
-    os.system(f"rm -rf {labels_filepath}/*")
-    os.system(f"rm -rf {images_filepath}/*")
-    os.system(f"cd {images_filepath} ; mkdir labels ; cd labels ; touch /progress_report.txt")
-
-    raise KeyboardInterrupt()
- 
 
 ## Main Class
 class Render:
@@ -31,18 +15,19 @@ class Render:
         self.axis = bpy.data.objects['Main Axis']
         self.light_1 = bpy.data.objects['Light1']
         self.light_2 = bpy.data.objects['Light2']
-        self.obj_names = blocks
+        self.obj_names = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
+                          'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
         self.objects = self.create_objects() # Create list of bpy.data.objects from bpy.data.objects[1] to bpy.data.objects[N]
 
         ## Render information
-        self.camera_d_limits = [0.2, 0.6] # Define range of heights z in m that the camera is going to pan through
-        self.beta_limits = [0, 0] # Define range of beta angles that the camera is going to pan through
+        self.camera_d_limits = [0.1, 0.5] # Define range of heights z in m that the camera is going to pan through
+        self.beta_limits = [80, -80] # Define range of beta angles that the camera is going to pan through
         self.gamma_limits = [0, 360] # Define range of gamma angles that the camera is going to pan through
         
         ## Output information
         # Input your own preferred location for the images and labels
-        self.images_filepath = images_filepath
-        self.labels_filepath = labels_filepath
+        self.images_filepath = '/home/stefano/modelliMegaBlocks/megaBlockSet/sets/X1-Y1-Z2'
+        self.labels_filepath = '/home/stefano/modelliMegaBlocks/megaBlockSet/sets/X1-Y1-Z2/labels'
 
     def set_camera(self):
         self.axis.rotation_euler = (0, 0, 0)
@@ -55,7 +40,7 @@ class Render:
         rotation step as input, and outputs the images and the labels to the above specified locations.
         '''
         ## Calculate the number of images and labels to generate
-        n_renders = 4*self.calculate_n_renders(rot_step) # Calculate number of images
+        n_renders = self.calculate_n_renders(rot_step) # Calculate number of images
         print('Number of renders to create:', n_renders)
 
         accept_render = input('\nContinue?[Y/N]:  ') # Ask whether to procede with the data generation
@@ -85,46 +70,45 @@ class Render:
                     beta_r = (-1)*beta + 90 # Re-factor the current beta
 
                     for gamma in range(self.gamma_limits[0], self.gamma_limits[1] + 1, rotation_step): # Loop to vary the angle gamma
-                        for _ in range(4):
-                            render_counter += 1 # Update counter
-                            self.objects[0].rotation_euler = (0, m.radians(90), 0)
-                            ## Update the rotation of the axis
-                            axis_rotation = (m.radians(beta_r), 0, m.radians(gamma)) 
-                            self.axis.rotation_euler = axis_rotation # Assign rotation to <bpy.data.objects['Empty']> object
-                            # Display demo information - Location of the camera
-                            print("On render:", render_counter)
-                            print("--> Location of the camera:")
-                            print("     d:", d/10, "m")
-                            print("     Beta:", str(beta_r)+"Degrees")
-                            print("     Gamma:", str(gamma)+"Degrees")
+                        render_counter += 1 # Update counter
+                        
+                        ## Update the rotation of the axis
+                        axis_rotation = (m.radians(beta_r), 0, m.radians(gamma)) 
+                        self.axis.rotation_euler = axis_rotation # Assign rotation to <bpy.data.objects['Empty']> object
+                        # Display demo information - Location of the camera
+                        print("On render:", render_counter)
+                        print("--> Location of the camera:")
+                        print("     d:", d/10, "m")
+                        print("     Beta:", str(beta_r)+"Degrees")
+                        print("     Gamma:", str(gamma)+"Degrees")
 
-                            ## Configure lighting
-                            energy1 = random.randint(0, 30) # Grab random light intensity
-                            self.light_1.data.energy = energy1 # Update the <bpy.data.objects['Light']> energy information
-                            energy2 = random.randint(4, 20) # Grab random light intensity
-                            self.light_2.data.energy = energy2 # Update the <bpy.data.objects['Light2']> energy information
+                        ## Configure lighting
+                        energy1 = random.randint(0, 30) # Grab random light intensity
+                        self.light_1.data.energy = energy1 # Update the <bpy.data.objects['Light']> energy information
+                        energy2 = random.randint(4, 20) # Grab random light intensity
+                        self.light_2.data.energy = energy2 # Update the <bpy.data.objects['Light2']> energy information
 
-                            ## Generate render
-                            self.render_blender(render_counter) # Take photo of current scene and ouput the render_counter.png file
-                            # Display demo information - Photo information
-                            print("--> Picture information:")
-                            print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
-                            print("     Rendering samples:", self.samples)
+                        ## Generate render
+                        self.render_blender(render_counter) # Take photo of current scene and ouput the render_counter.png file
+                        # Display demo information - Photo information
+                        print("--> Picture information:")
+                        print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
+                        print("     Rendering samples:", self.samples)
 
-                            ## Output Labels
-                            text_file_name = self.labels_filepath + '/' + str(render_counter) + '.txt' # Create label file name
-                            text_file = open(text_file_name, 'w+') # Open .txt file of the label
-                            # Get formatted coordinates of the bounding boxes of all the objects in the scene
-                            # Display demo information - Label construction
-                            print("---> Label Construction")
-                            text_coordinates = self.get_all_coordinates()
-                            splitted_coordinates = text_coordinates.split('\n')[:-1] # Delete last '\n' in coordinates
-                            text_file.write('\n'.join(splitted_coordinates)) # Write the coordinates to the text file and output the render_counter.txt file
-                            text_file.close() # Close the .txt file corresponding to the label
-
-                            ## Show progress on batch of renders
-                            print('Progress =', str(render_counter) + '/' + str(n_renders))
-                            report.write('Progress: ' + str(render_counter) + ' Rotation: ' + str(axis_rotation) + ' z_d: ' + str(d / 10) + '\n')
+                        ## Output Labels
+                        text_file_name = self.labels_filepath + '/' + str(render_counter) + '.txt' # Create label file name
+                        text_file = open(text_file_name, 'w+') # Open .txt file of the label
+                        # Get formatted coordinates of the bounding boxes of all the objects in the scene
+                        # Display demo information - Label construction
+                        print("---> Label Construction")
+                        text_coordinates = self.get_all_coordinates()
+                        splitted_coordinates = text_coordinates.split('\n')[:-1] # Delete last '\n' in coordinates
+                        text_file.write('\n'.join(splitted_coordinates)) # Write the coordinates to the text file and output the render_counter.txt file
+                        text_file.close() # Close the .txt file corresponding to the label
+ 
+                        ## Show progress on batch of renders
+                        print('Progress =', str(render_counter) + '/' + str(n_renders))
+                        report.write('Progress: ' + str(render_counter) + ' Rotation: ' + str(axis_rotation) + ' z_d: ' + str(d / 10) + '\n')
 
             report.close() # Close the .txt file corresponding to the report
 
@@ -306,14 +290,10 @@ class Render:
 
 ## Run data generation
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, handler)
     # Initialize rendering class as r
-    for block in blocks:
-        bpy.data.objects[block].location.x = 1000
-    bpy.data.objects[current_block].location.x = 0
     r = Render()
     # Initialize camera
     r.set_camera()
     # Begin data generation
-    rotation_step = 5
+    rotation_step = 100
     r.main_rendering_loop(rotation_step)
