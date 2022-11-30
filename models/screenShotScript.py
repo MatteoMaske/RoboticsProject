@@ -8,15 +8,16 @@ import os
 blocks = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
                           'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
 current_block = 'X1-Y1-Z2' # block currently processing
-images_filepath = '/Users/amirgheser/Robotics/RoboticsProject/dataset/images'
-labels_filepath = '/Users/amirgheser/Robotics/RoboticsProject/dataset/labels'
+images_filepath = '/Users/amirgheser/Robotics/dataset/'
+labels_filepath = '/Users/amirgheser/Robotics/dataset/labels'
 
 def handler(signum, frame):
     print('Clearing dataset folder')
-    for file in os.listdir(images_filepath):
-        os.remove(os.path.join(images_filepath, file))
-    for file in os.listdir(labels_filepath):
-        os.remove(os.path.join(labels_filepath, file))
+    os.system(f"rm -rf {labels_filepath}/*")
+    os.system(f"rm -rf {images_filepath}/*")
+    os.system(f"cd {images_filepath}")
+    os.system("mkdir labels")
+    os.system("cd ./labels")
     f = open("progress_report.txt", "w")
     f.close()
     exit(1)
