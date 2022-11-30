@@ -4,6 +4,9 @@ import numpy as np
 import math as m
 import random
 
+blocks = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
+                          'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
+current_block = 'X1-Y1-Z2' # block currently processing
 ## Main Class
 class Render:
     def __init__(self):
@@ -15,8 +18,7 @@ class Render:
         self.axis = bpy.data.objects['Main Axis']
         self.light_1 = bpy.data.objects['Light1']
         self.light_2 = bpy.data.objects['Light2']
-        self.obj_names = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
-                          'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
+        self.obj_names = blocks
         self.objects = self.create_objects() # Create list of bpy.data.objects from bpy.data.objects[1] to bpy.data.objects[N]
 
         ## Render information
@@ -26,8 +28,8 @@ class Render:
         
         ## Output information
         # Input your own preferred location for the images and labels
-        self.images_filepath = '/home/stefano/modelliMegaBlocks/megaBlockSet/data'
-        self.labels_filepath = '/home/stefano/modelliMegaBlocks/megaBlockSet/data/lables'
+        self.images_filepath = '/Users/amirgheser/Robotics/RoboticsProject/dataset/images'
+        self.labels_filepath = '/Users/amirgheser/Robotics/RoboticsProject/dataset/labels'
 
     def set_camera(self):
         self.axis.rotation_euler = (0, 0, 0)
@@ -291,6 +293,9 @@ class Render:
 ## Run data generation
 if __name__ == '__main__':
     # Initialize rendering class as r
+    for block in blocks:
+        bpy.data.objects[block].location.x = 1000
+    bpy.data.objects[current_block].location.x = 0
     r = Render()
     # Initialize camera
     r.set_camera()
