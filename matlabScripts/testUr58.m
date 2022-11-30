@@ -11,23 +11,25 @@ global xef;
 global phie0;
 global phief;
 %Initial pose
-xe0 = [0.3; 0.3; 0.1];
+xe0 = [0.1; -0.3; 0.1];
 phie0 = [0; 0; 0];
 xef = [0.5; 0.1; 0.5];
 phief = [pi/6; pi/3; pi/4];
 
-
-
-DeltaT = 0.01 ;  
-TH0 = ur5Inverse(pd(0), eul2rotm(phid(0)'));
-
+DeltaT = 0.01;  
 Kp = 10*eye(3,3);
-Kphi = 0.01*eye(3,3);
+Kphi = 0.0001*eye(3,3);
+global xEp;
+global phiEp;
+[Th,xEp, phiEp] = p2pMotionPlan(@ur5Direct, @ur5Inverse, xe0, phie0, xef, phief, 0, 1, DeltaT )
 
-[Th]= invDiffKinematicControlSimComplete(@ur5Direct, @ur5Jac, @pd, @phid, TH0(1,:), Kp, Kphi, 0, 1, DeltaT);
+Th = Th(:,2:7);
+
+%[Th]= invDiffKinematicControlSimComplete(@ur5Direct, @ur5Jac, @pd1, @phid1, nTh(1,2:7), Kp, Kphi, 0, 1, DeltaT);
 
  lim = 1;
 scaleFactor = 10;
+
 limS = scaleFactor*lim;
 axs=axes('XLim',[-limS limS],'YLim',[-limS limS],'ZLim',[-limS limS]); view(3); grid on;
 xlabel(['X x ', num2str(scaleFactor)], 'FontSize',12);
@@ -76,5 +78,20 @@ global phief; global phie0;
     else
         phid = t*phief + (1-t)*phie0;
     end
+end
+
+function [xd] = pd1(t)
+global xEp; 
+[r, c] = size(xEp);
+[i, p] = min(abs(xEp(:,1)-t));                    
+xd = xEp(p, 2:c);
+end
+
+function [phid] = phid1(t)
+global phiEp; 
+
+[r, c] = size(phiEp);
+[i, p] = min(abs(phiEp(:,1)-t));                    
+phid = phiEp(p, 2:c);
 end
 

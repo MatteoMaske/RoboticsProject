@@ -46,7 +46,7 @@
  
                      <geometry> 
                          <mesh> 
-                             <uri>model://X1-Y2-Z2-TWINFILLET/mesh.stl</uri> 
+                             <uri>model://X1-Y2-Z2-TWINFILLET/mesh/X1-Y2-Z2-TWINFILLET.stl</uri> 
                              <!-- <uri>model://mymodel/meshes/model.stl</uri> --> 
                              <!-- Scaling factor applied to the mesh --> 
                              <scale>1.0 1.0 1.0</scale> 
