@@ -1,0 +1,8 @@
+#todo divide images into train, val and test and set path
+
+train: /home/stefano/modelliMegaBlocks/megaBlockSet/data
+val: /home/stefano/modelliMegaBlocks/megaBlockSet/data
+test: /home/stefano/modelliMegaBlocks/megaBlockSet/data
+
+nc: 1
+names: ['Megablocks']
