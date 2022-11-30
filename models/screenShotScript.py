@@ -15,12 +15,12 @@ def handler(signum, frame):
     print('Clearing dataset folder')
     os.system(f"rm -rf {labels_filepath}/*")
     os.system(f"rm -rf {images_filepath}/*")
-    os.system(f"cd {images_filepath}")
+    os.system(f"cd && cd {images_filepath}")
     os.system("mkdir labels")
     os.system("cd ./labels")
-    f = open("progress_report.txt", "w")
+    f = open("progress_report.txt", "w+")
     f.close()
-    exit(1)
+    raise KeyboardInterrupt()
  
 
 ## Main Class
@@ -90,7 +90,7 @@ class Render:
                     for gamma in range(self.gamma_limits[0], self.gamma_limits[1] + 1, rotation_step): # Loop to vary the angle gamma
                         render_counter += 1 # Update counter
                         for _ in range(4):
-                            self.objetcs[0].rotation_euler = (m.radians(90), 0, 0)
+                            self.objects[0].rotation_euler = (m.radians(90), 0, 0)
                             ## Update the rotation of the axis
                             axis_rotation = (m.radians(beta_r), 0, m.radians(gamma)) 
                             self.axis.rotation_euler = axis_rotation # Assign rotation to <bpy.data.objects['Empty']> object
