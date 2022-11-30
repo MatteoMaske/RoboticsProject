@@ -8,8 +8,8 @@ import os
 blocks = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
                           'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
 current_block = 'X1-Y1-Z2' # block currently processing
-images_filepath = '/Users/amirgheser/Robotics/dataset/'
-labels_filepath = '/Users/amirgheser/Robotics/dataset/labels'
+images_filepath = '/home/stefano/modelliMegaBlocks/megaBlockSet/sets/X1-Y1-Z2'
+labels_filepath = '/home/stefano/modelliMegaBlocks/megaBlockSet/sets/X1-Y1-Z2/labels'
 
 def handler(signum, frame):
     print('Clearing dataset folder')
@@ -39,7 +39,7 @@ class Render:
 
         ## Render information
         self.camera_d_limits = [0.2, 0.6] # Define range of heights z in m that the camera is going to pan through
-        self.beta_limits = [80, -80] # Define range of beta angles that the camera is going to pan through
+        self.beta_limits = [0, 0] # Define range of beta angles that the camera is going to pan through
         self.gamma_limits = [0, 360] # Define range of gamma angles that the camera is going to pan through
         
         ## Output information
@@ -50,7 +50,7 @@ class Render:
     def set_camera(self):
         self.axis.rotation_euler = (0, 0, 0)
         self.axis.location = (0, 0, 0)
-        self.camera.location = (0, 0, 3)
+        self.camera.location = (0.6, 0.6, 0.3)
 
     def main_rendering_loop(self, rot_step):
         '''
@@ -78,7 +78,7 @@ class Render:
             # Begin nested loops
             for d in range(dmin, dmax + 1, 2): # Loop to vary the height of the camera
                 ## Update the height of the camera
-                self.camera.location = (0, 0, d/10) # Divide the distance z by 10 to re-factor current height
+                self.camera.location = (0.5, 0.5, d/10) # Divide the distance z by 10 to re-factor current height
 
                 # Refactor the beta limits for them to be in a range from 0 to 360 to adapt the limits to the for loop
                 min_beta = (-1)*self.beta_limits[0] + 90
