@@ -29,9 +29,10 @@ class Render:
         self.light_2 = bpy.data.objects['Light2']
         self.obj_names = [blocks[0]]
         self.objects = self.create_objects() # Create list of bpy.data.objects from bpy.data.objects[1] to bpy.data.objects[N]
+        self.objects[0].location = (0, 0, 0)
 
         ## Render information
-        self.camera_d_limits = [0.1, 0.5] # Define range of heights z in m that the camera is going to pan through
+        self.camera_d_limits = [0.2, 0.5] # Define range of heights z in m that the camera is going to pan through
         self.beta_limits = [80, -80] # Define range of beta angles that the camera is going to pan through
         self.gamma_limits = [0, 360] # Define range of gamma angles that the camera is going to pan through
         
@@ -89,7 +90,7 @@ class Render:
                         render_counter += 1 # Update counter
                         
                         ## Change block color
-                        mat.diffuse_color = random.choice(colors)
+                        mat.diffuse_color = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1), 1.0)
 
                         ## Update the rotation of the axis
                         axis_rotation = (m.radians(beta_r), 0, m.radians(gamma)) 
