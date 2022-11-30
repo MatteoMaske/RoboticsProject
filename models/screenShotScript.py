@@ -15,11 +15,8 @@ def handler(signum, frame):
     print('Clearing dataset folder')
     os.system(f"rm -rf {labels_filepath}/*")
     os.system(f"rm -rf {images_filepath}/*")
-    os.system(f"cd && cd {images_filepath}")
-    os.system("mkdir labels")
-    os.system("cd ./labels")
-    f = open("progress_report.txt", "w+")
-    f.close()
+    os.system(f"touch {labels_filepath}/progress_report.txt")
+
     raise KeyboardInterrupt()
  
 
