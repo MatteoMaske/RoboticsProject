@@ -4,6 +4,8 @@ import numpy as np
 import math as m
 import random
 
+#self.obj_names = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2', 'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
+
 blocks = ['X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
                           'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
 
@@ -53,7 +55,7 @@ class Render:
         '''
         ## Calculate the number of images and labels to generate
         n_renders = self.calculate_n_renders(rot_step) # Calculate number of images
-        print('Number of renders to create:', n_renders)
+        #print('Number of renders to create:', n_renders)
 
         accept_render = input('\nContinue?[Y/N]:  ') # Ask whether to procede with the data generation
 
@@ -96,11 +98,11 @@ class Render:
                         axis_rotation = (m.radians(beta_r), 0, m.radians(gamma)) 
                         self.axis.rotation_euler = axis_rotation # Assign rotation to <bpy.data.objects['Empty']> object
                         # Display demo information - Location of the camera
-                        print("On render:", render_counter)
-                        print("--> Location of the camera:")
-                        print("     d:", d/10, "m")
-                        print("     Beta:", str(beta_r)+"Degrees")
-                        print("     Gamma:", str(gamma)+"Degrees")
+                        # print("On render:", render_counter)
+                        # print("--> Location of the camera:")
+                        # print("     d:", d/10, "m")
+                        # print("     Beta:", str(beta_r)+"Degrees")
+                        # print("     Gamma:", str(gamma)+"Degrees")
 
                         ## Configure lighting
                         energy1 = random.randint(0, 30) # Grab random light intensity
@@ -111,16 +113,16 @@ class Render:
                         ## Generate render
                         self.render_blender(render_counter) # Take photo of current scene and ouput the render_counter.png file
                         # Display demo information - Photo information
-                        print("--> Picture information:")
-                        print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
-                        print("     Rendering samples:", self.samples)
+                        # print("--> Picture information:")
+                        # print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
+                        # print("     Rendering samples:", self.samples)
 
                         ## Output Labels
                         text_file_name = self.labels_filepath + '/' + str(render_counter) + '.txt' # Create label file name
                         text_file = open(text_file_name, 'w+') # Open .txt file of the label
                         # Get formatted coordinates of the bounding boxes of all the objects in the scene
                         # Display demo information - Label construction
-                        print("---> Label Construction")
+                        #print("---> Label Construction")
                         text_coordinates = self.get_all_coordinates()
                         splitted_coordinates = text_coordinates.split('\n')[:-1] # Delete last '\n' in coordinates
                         text_file.write('\n'.join(splitted_coordinates)) # Write the coordinates to the text file and output the render_counter.txt file
@@ -143,12 +145,12 @@ class Render:
         '''
         main_text_coordinates = '' # Initialize the variable where we'll store the coordinates
         for i, objct in enumerate(self.objects): # Loop through all of the objects
-            print("     On object:", objct)
+            #print("     On object:", objct)
             b_box = self.find_bounding_box(objct) # Get current object's coordinates
             if b_box: # If find_bounding_box() doesn't return None
-                print("         Initial coordinates:", b_box)
+                #print("         Initial coordinates:", b_box)
                 text_coordinates = self.format_coordinates(b_box, i) # Reformat coordinates to YOLOv3 format
-                print("         YOLO-friendly coordinates:", text_coordinates)
+                #print("         YOLO-friendly coordinates:", text_coordinates)
                 main_text_coordinates = main_text_coordinates + text_coordinates # Update main_text_coordinates variables whith each
                                                                                  # line corresponding to each class in the frame of the current image
             else:
