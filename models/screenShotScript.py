@@ -8,7 +8,7 @@ import random
 
 blocks = ['X1-Y2-Z2-TWINFILLET','X1-Y3-Z2',
                           'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
-
+current_block = blocks[1]
 colors = [(0.0, 0.0, 0.0, 1.0),
     (0.0, 0.0, 1.0, 1.0),
     (0.0, 1.0, 0.0, 1.0),
@@ -29,7 +29,7 @@ class Render:
         self.axis = bpy.data.objects['Main Axis']
         self.light_1 = bpy.data.objects['Light1']
         self.light_2 = bpy.data.objects['Light2']
-        self.obj_names = [blocks[0]]
+        self.obj_names = [current_block]
         self.objects = self.create_objects() # Create list of bpy.data.objects from bpy.data.objects[1] to bpy.data.objects[N]
         self.objects[0].location = (0, 0, 0)
 
@@ -75,7 +75,7 @@ class Render:
             mat = bpy.data.materials.new(name= 'colored')
             ico = self.objects[0]
             ico.active_material = mat
-
+            random.seed(123)
             # Begin nested loops
             for d in range(dmin, dmax + 1, 2): # Loop to vary the height of the camera
                 ## Update the height of the camera
@@ -113,23 +113,24 @@ class Render:
                         ## Generate render
                         self.render_blender(render_counter) # Take photo of current scene and ouput the render_counter.png file
                         # Display demo information - Photo information
-                        # print("--> Picture information:")
-                        # print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
-                        # print("     Rendering samples:", self.samples)
+                        print("--> Picture information:")
+                        print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
+                        print("     Rendering samples:", self.samples)
 
                         ## Output Labels
                         text_file_name = self.labels_filepath + '/' + str(render_counter) + '.txt' # Create label file name
                         text_file = open(text_file_name, 'w+') # Open .txt file of the label
                         # Get formatted coordinates of the bounding boxes of all the objects in the scene
                         # Display demo information - Label construction
-                        #print("---> Label Construction")
+                        print("---> Label Construction")
                         text_coordinates = self.get_all_coordinates()
                         splitted_coordinates = text_coordinates.split('\n')[:-1] # Delete last '\n' in coordinates
                         text_file.write('\n'.join(splitted_coordinates)) # Write the coordinates to the text file and output the render_counter.txt file
                         text_file.close() # Close the .txt file corresponding to the label
  
                         ## Show progress on batch of renders
-                        print('Progress =', str(render_counter) + '/' + str(n_renders))
+                        if render_counter % 100 == 0:
+                            print('Progress =', str(render_counter) + '/' + str(n_renders))
                         report.write('Progress: ' + str(render_counter) + ' Rotation: ' + str(axis_rotation) + ' z_d: ' + str(d / 10) + '\n')
 
             report.close() # Close the .txt file corresponding to the report
@@ -145,16 +146,16 @@ class Render:
         '''
         main_text_coordinates = '' # Initialize the variable where we'll store the coordinates
         for i, objct in enumerate(self.objects): # Loop through all of the objects
-            #print("     On object:", objct)
+            print("     On object:", objct)
             b_box = self.find_bounding_box(objct) # Get current object's coordinates
             if b_box: # If find_bounding_box() doesn't return None
-                #print("         Initial coordinates:", b_box)
+                print("         Initial coordinates:", b_box)
                 text_coordinates = self.format_coordinates(b_box, i) # Reformat coordinates to YOLOv3 format
-                #print("         YOLO-friendly coordinates:", text_coordinates)
+                print("         YOLO-friendly coordinates:", text_coordinates)
                 main_text_coordinates = main_text_coordinates + text_coordinates # Update main_text_coordinates variables whith each
                                                                                  # line corresponding to each class in the frame of the current image
             else:
-                print("         Object not visible")
+                #print("         Object not visible")
                 pass
 
         return main_text_coordinates # Return all coordinates
@@ -312,10 +313,13 @@ class Render:
 
 ## Run data generation
 if __name__ == '__main__':
+    for block in blocks:
+        bpy.data.objects[block].location.x = 1000
+    bpy.data.objects[current_block].location = (0,0,0)
     # Initialize rendering class as r
     r = Render()
     # Initialize camera
     r.set_camera()
     # Begin data generation
-    rotation_step = 2
+    rotation_step = 3
     r.main_rendering_loop(rotation_step)
