@@ -8,19 +8,12 @@ a0 = A.a0; a2 = A.a2, a3 = A.a3;
 th1=Th.th1; th2=Th.th2; th3 = Th.th3;
 
 %Define the axis
-axs=axes('XLim',[-lim lim],'YLim',[-lim lim],'ZLim',[-lim lim]);
-view(3); 
-grid on;
+axs=axes('XLim',[-lim lim],'YLim',[-lim lim],'ZLim',[-lim lim]); view(3); grid on;
 xlabel('X', 'FontSize',12);
-ylabel('Y', 'FontSize',12);
-zlabel('Z', 'FontSize',12);
-
 A0b = [eye(3,3), [0;0;a0]; [0 0 0] 1];
-hb = triad('Parent', axs,'linewidth',3); 
-h0 = triad('Parent',hb,'Matrix', A0b,'linewidth', 3);
+hb = triad('Parent', axs,'linewidth',3); h0 = triad('Parent',hb,'Matrix', A0b,'linewidth', 3);
 plot3([0, 0], [0, 0], [0, a0], 'Parent',hb,'linestyle','--');
 
-%Transformation matrix from frame 0 to frame 1
 A10 = [[cos(th1(1)) 0 sin(th1(1)); sin(th1(1)) 0 -cos(th1(1)); 0 1 0], [0;0;0];
         [0, 0, 0], 1];
 t10 = hgtransform('Parent',h0, 'Matrix', A10);
@@ -58,4 +51,9 @@ for i = 1:k,
         drawnow;
         pause;
 end
+%A1b = A0b*A10; A2b = A1b*A21;A3b=A2b*A32;
+%Ob =[0;0;0]; O1=A1b(1:3,4); O2=A2b(1:3,4); O3 = A3b(1:3,4);  
+%plot3([Ob(1), O1(1)], [Ob(2), O1(2)], [Ob(3), O1(3)], 'Color', [0, 0,0], 'Parent', t10,'linestyle','--');
+%plot3([O1(1), O2(1)], [O1(2), O2(2)], [O1(3), O2(3)], 'Color', [0, 0,0], 'Parent', t21,'linestyle','--');
+%plot3([O2(1), O3(1)], [O2(2), O3(2)], [O2(3), O3(3)], 'Color', [0, 0,0], 'Parent', t32,'linestyle','--');
 end

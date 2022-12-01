@@ -46,7 +46,7 @@
  
                      <geometry> 
                          <mesh> 
-                             <uri>model:///X1-Y2-Z2-CHAMFER/mesh.stl</uri> 
+                             <uri>model://X1-Y2-Z2-CHAMFER/mesh/X1-Y2-Z2-CHAMFER.stl</uri> 
                              <!-- <uri>model://mymodel/meshes/model.stl</uri> --> 
                              <!-- Scaling factor applied to the mesh --> 
                              <scale>1.0 1.0 1.0</scale> 
@@ -67,7 +67,7 @@
                          <script> 
                              <uri>file://media/materials/scripts/gazebo.material</uri>
                              <!-- <name>Gazebo/TurquoiseGlowOutline</name> -->
-                             <name>Gazebo/Green</name>
+                             <name>Gazebo/Red</name>
                          </script>
                          <shader type="vertex">
                            <normal_map>__default__</normal_map>

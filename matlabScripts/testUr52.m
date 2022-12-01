@@ -4,7 +4,7 @@
 % actually reproduce the pose.
 theta0 = [1.6, 0.2, -0.5, 2.89, 1.1, 1.25];
 
-[pe,Re] = ur5Direct(theta0);
+[pe,Re] = ur5Direct(theta0),
 
 Th = ur5Inverse(pe, Re);
 
