@@ -7,7 +7,7 @@ TRAININGSET = 0.6
 VALIDSET = 0.2
 TESTSET = 0.2
 
-index = 10
+index = 2
 generalPath = '/Users/amirgheser/Robotics/dataset/'
 blocks = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2', 'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
 targetBlock = blocks[index]
@@ -65,7 +65,7 @@ print('Done Training set')
 
 ## Validation set
 for n in range(trainNumber+1,trainNumber+validNumber+1):
-    imageName = str(index[n-1]) + '.png'
+    imageName = str(index[n-1]) + '.png'    
     labelName = str(index[n-1]) + '.txt'
     # print(imageName)
     # print(labelName)
