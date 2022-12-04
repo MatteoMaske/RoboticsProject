@@ -1,5 +1,5 @@
-# this file get all the images form the data/obj folder 
-# and creates test.txt, train.txt and valid.txt with contaiting list of all images
+# this file get all the images form the data/* folder
+# and creates test.txt, train.txt and valid.txt with contaiting list of all path images
 
 import os
 
