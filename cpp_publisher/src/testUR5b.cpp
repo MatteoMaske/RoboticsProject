@@ -279,14 +279,6 @@ MatrixXf jacobian(MatrixXf Th){
     
 
     MatrixXf J2(6,1);
-    /* J2 = [
-     -cos(th1)*(A3*sin(th2 + th3) + A2*sin(th2) + D5*(sin(th2 + th3)*sin(th4) - cos(th2 + th3)*cos(th4)) - D5*sin(th5)*(cos(th2 + th3)*sin(th4) + sin(th2 + th3)*cos(th4)));
-     -sin(th1)*(A3*sin(th2 + th3) + A2*sin(th2) + D5*(sin(th2 + th3)*sin(th4) - cos(th2 + th3)*cos(th4)) - D5*sin(th5)*(cos(th2 + th3)*sin(th4) + sin(th2 + th3)*cos(th4)));
-     A3*cos(th2 + th3) - (D5*sin(th2 + th3 + th4 + th5))/2 + A2*cos(th2) + (D5*sin(th2 + th3 + th4 - th5))/2 + D5*sin(th2 + th3 + th4);
-     sin(th1);
-     -cos(th1);
-     0]; */
-    //rewrite the code above considering that A1...A6 are A(0)...A(5) and D1...D6 are D(0)...D(5) and th1...th6 are Th(0)...Th(5)
     J2 << -cos(Th(0))*(A(2)*sin(Th(1)+Th(2)) + A(1)*sin(Th(1)) + D(4)*(sin(Th(2)+Th(3))*sin(Th(3)) - cos(Th(1)+Th(2))*cos(Th(3))) - D(4)*sin(Th(4))*(cos(Th(1)+Th(2))*sin(Th(3)) + sin(Th(1)+Th(2))*cos(Th(3)))),
         -sin(Th(0))*(A(2)*sin(Th(1)+Th(2)) + A(1)*sin(Th(1)) + D(4)*(sin(Th(1)+Th(2))*sin(Th(3)) - cos(Th(1)+Th(2))*cos(Th(3))) - D(4)*sin(Th(4))*(cos(Th(1)+Th(2))*sin(Th(3)) + sin(Th(1)+Th(2))*cos(Th(3)))),
         A(2)*cos(Th(1)+Th(2)) - (D(4)*sin(Th(1)+Th(2)+Th(3)+Th(4)))/2 + A(1)*cos(Th(1)) + (D(4)*sin(Th(1)+Th(2)+Th(3)-Th(4)))/2 + D(4)*sin(Th(1)+Th(2)+Th(3)),
@@ -296,13 +288,6 @@ MatrixXf jacobian(MatrixXf Th){
 
 
     MatrixXf J3(6,1);
-    /* J3 << cos(Th(1))*(D(5)*cos(Th(2)+Th(3)+Th(4)) - A(3)*sin(Th(2)+Th(3)) + D(5)*sin(Th(2)+Th(3)+Th(4))*sin(Th(5))),
-        sin(Th(1))*(D(5)*cos(Th(2)+Th(3)+Th(4)) - A(3)*sin(Th(2)+Th(3)) + D(5)*sin(Th(2)+Th(3)+Th(4))*sin(Th(5))),
-        A(3)*cos(Th(2)+Th(3)) - (D(5)*sin(Th(2)+Th(3)+Th(4)+Th(5)))/2 + (D(5)*sin(Th(2)+Th(3)+Th(4)-Th(5)))/2 + D(5)*sin(Th(2)+Th(3)+Th(4)),
-        sin(Th(1)),
-        -cos(Th(1)),
-        0; */
-    //rewrite the code above decreasing all the indexes by 1
     J3 << cos(Th(0))*(D(4)*cos(Th(1)+Th(2)+Th(3)) - A(2)*sin(Th(1)+Th(2)) + D(4)*sin(Th(1)+Th(2)+Th(3))*sin(Th(4))),
         sin(Th(0))*(D(4)*cos(Th(1)+Th(2)+Th(3)) - A(2)*sin(Th(1)+Th(2)) + D(4)*sin(Th(1)+Th(2)+Th(3))*sin(Th(4))),
         A(2)*cos(Th(1)+Th(2)) - (D(4)*sin(Th(1)+Th(2)+Th(3)+Th(4)))/2 + (D(4)*sin(Th(1)+Th(2)+Th(3)-Th(4)))/2 + D(4)*sin(Th(1)+Th(2)+Th(3)),
@@ -311,13 +296,6 @@ MatrixXf jacobian(MatrixXf Th){
         0;
     
     MatrixXf J4(6,1);
-   /*  J4 << D(5)*cos(Th(1))*(cos(Th(2)+Th(3)+Th(4)) + sin(Th(2)+Th(3)+Th(4))*sin(Th(5))),
-        D(5)*sin(Th(1))*(cos(Th(2)+Th(3)+Th(4)) + sin(Th(2)+Th(3)+Th(4))*sin(Th(5))),
-        D(5)*(sin(Th(2)+Th(3)+Th(4)-Th(5))/2 + sin(Th(2)+Th(3)+Th(4)) - sin(Th(2)+Th(3)+Th(4)+Th(5))/2),
-        sin(Th(1)),
-        -cos(Th(1)),
-        0; */
-    //rewrite the code above decreasing all the indexes by 1
     J4 << D(4)*cos(Th(0))*(cos(Th(1)+Th(2)+Th(3)) + sin(Th(1)+Th(2)+Th(3))*sin(Th(4))),
         D(4)*sin(Th(0))*(cos(Th(1)+Th(2)+Th(3)) + sin(Th(1)+Th(2)+Th(3))*sin(Th(4))),
         D(4)*(sin(Th(1)+Th(2)+Th(3)-Th(4))/2 + sin(Th(1)+Th(2)+Th(3)) - sin(Th(1)+Th(2)+Th(3)+Th(4))/2),
@@ -326,13 +304,6 @@ MatrixXf jacobian(MatrixXf Th){
         0;
 
     MatrixXf J5(6,1);
-    /* J5 << -D(5)*sin(Th(1))*sin(Th(5)) - D(5)*cos(Th(2)+Th(3)+Th(4))*cos(Th(1))*cos(Th(5)),
-        D(5)*cos(Th(1))*sin(Th(5)) - D(5)*cos(Th(2)+Th(3)+Th(4))*cos(Th(5))*sin(Th(1)),
-        -D(5)*(sin(Th(2)+Th(3)+Th(4)-Th(5))/2 + sin(Th(2)+Th(3)+Th(4)+Th(5))/2),
-        sin(Th(2)+Th(3)+Th(4))*cos(Th(1)),
-        sin(Th(2)+Th(3)+Th(4))*sin(Th(1)),
-        -cos(Th(2)+Th(3)+Th(4)); */
-    //rewrite the code above decreasing all the indexes by 1
     J5 << -D(4)*sin(Th(0))*sin(Th(4)) - D(4)*cos(Th(1)+Th(2)+Th(3))*cos(Th(0))*cos(Th(4)),
         D(4)*cos(Th(0))*sin(Th(4)) - D(4)*cos(Th(1)+Th(2)+Th(3))*cos(Th(4))*sin(Th(0)),
         -D(4)*(sin(Th(1)+Th(2)+Th(3)-Th(4))/2 + sin(Th(1)+Th(2)+Th(3)+Th(4))/2),
@@ -341,13 +312,6 @@ MatrixXf jacobian(MatrixXf Th){
         -cos(Th(1)+Th(2)+Th(3));
 
     MatrixXf J6(6,1);
-  /*   J6 << 0,
-        0,
-        0,
-        cos(Th(5))*sin(Th(1)) - cos(Th(2)+Th(3)+Th(4))*cos(Th(1))*sin(Th(5)),
-        -cos(Th(1))*cos(Th(5)) - cos(Th(2)+Th(3)+Th(4))*sin(Th(1))*sin(Th(5)),
-        -sin(Th(2)+Th(3)+Th(4))*sin(Th(5)); */
-    //rewrite the code above decreasing all the indexes by 1
     J6 << 0,
         0,
         0,
