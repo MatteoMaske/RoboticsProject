@@ -3,7 +3,7 @@
 
 import os
 
-generalPath = 'content/drive/MyDrive/darknet/dataSetBlocksSerio/'
+generalPath = '/content/drive/MyDrive/darknet/dataSetBlocksSerio/'
 
 ##TEST##
 files_list = []

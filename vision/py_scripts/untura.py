@@ -11,10 +11,5 @@ for opt in opts:
     for a in aa:
         dir1 = dir + opt + a
         for file in os.listdir(dir1):
-            a = False
-            for i in range(10):
-                if (file.startswith(str(i))):
-                    a = True
-            if a:
-                os.rename(dir1 + file, dir1 + 'X1-Y1-Z2-' + file)
-                
+            if file.startswith('X1-Y2-Z1-X1-Y2-Z1'):
+                os.rename(dir1 + file, dir1 + 'X1-Y2-Z1' + file[17:])
