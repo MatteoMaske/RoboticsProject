@@ -13,6 +13,7 @@ using Eigen::MatrixXf;
 //=======GLOBAL VARIABLES=======
 ros::Publisher pub_des_jstate; //publish desired joint state
 Eigen::MatrixXf currentPos(1,6);
+Eigen::MatrixXf currentGripper(1,3);
 
 //=======FUNCTION DECLARATION=======
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
@@ -21,6 +22,10 @@ Eigen::MatrixXf toRotationMatrix(Eigen::MatrixXf euler); //convert euler angles 
 void movingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef, ros::Publisher pub_des_jstate); //moving procedure
 void publish(Eigen::MatrixXf publishPos, ros::Publisher pub_des_jstate); //publish the joint angles
 MatrixXf computeMovement(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation, ros::Publisher pub_des_jstate);//compute the movement
+MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation, ros::Publisher pub_des_jstate);//compute the movement
+MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf phie, MatrixXf phid, MatrixXf phiddot, MatrixXf kp, MatrixXf kphi);
+MatrixXf jacobian(MatrixXf Th);
+
 void closeGripper();
 void openGripper();
 
@@ -36,13 +41,18 @@ int main(int argc, char **argv){
     MatrixXf Th0(1,6);
     Th0 << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //homing procedure joint angles
 
+    /*initial gripper pos*/
+    currentGripper << 0.0, 0.0, 0.0;
+
     /*target position and orientation*/
     MatrixXf xef(1,3);
     MatrixXf phief(1,3); 
     xef << 0.35, -0.15, 0.70;// 0.5, -0.5, 0.5;
     phief << 0, 0, 0;
 
-    currentPos = computeMovement(Th0, xef, phief, pub_des_jstate); //compute the movement to the first brick in tavolo_brick.world
+    //currentPos = computeMovement(Th0, xef, phief, pub_des_jstate); //compute the movement to the first brick in tavolo_brick.world
+
+    currentPos = computeMovementDifferential(Th0, xef, phief, pub_des_jstate); //compute the movement to the first brick in tavolo_brick.world
 
     movingProcedure(0.001,0.6, Th0, currentPos, pub_des_jstate);
 
@@ -152,6 +162,205 @@ MatrixXf computeMovement(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetO
     return currentPos;
 }
 
+MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation, ros::Publisher pub_des_jstate){
+    
+    EEPose eePose;
+
+    /*calc initial end effector pose*/
+    eePose = fwKin(Th0);
+
+    /*calc distance between initial and target position*/
+    float targetDist = sqrt(pow( targetPosition(0,0) - eePose.Pe(0,0), 2 ) + pow( targetPosition(0,1) - eePose.Pe(1,0), 2 ) + pow( targetPosition(0,2) - eePose.Pe(2,0), 2 ));
+    float step = targetDist / 100; //step size
+
+    /*from rotation matrix to euler angles*/
+    MatrixXf phie0;
+    Eigen::Matrix3f tmp;
+    tmp = eePose.Re;
+    phie0 = tmp.eulerAngles(0,1,2);
+
+    MatrixXf x(1,3); //position
+    MatrixXf phi(1,3); //orientation
+    Eigen::Matrix3f rotM; //rotation matrix
+    MatrixXf TH(8,6); //joint angles
+    EEPose eePose1;
+
+    /*current position equals to homing procedure position*/
+    currentPos = Th0;
+
+    /*some random matrix to be understood*/
+    MatrixXf kp(3,3);
+    kp = Eigen::Matrix3f::Identity(3,3)*10;
+    MatrixXf kphi(3,3);
+    kphi = Eigen::Matrix3f::Identity(3,3)*0.01;
+
+    /*create message to publish*/
+    std_msgs::Float64MultiArray msg;
+    msg.data.resize(9); //6 joint angles + 3 end effector joints
+    msg.data.assign(9,0); //empty the msg
+
+    cout << "Moving to target -> " << targetPosition << endl;
+
+    /*parameters for jacobians*/
+    MatrixXf qk(1,6);
+    MatrixXf qk1(1,6);
+    qk = currentPos;
+    MatrixXf vd(1,3);
+    MatrixXf phiddot(1,3);
+    MatrixXf dotqk(6,6);
+    MatrixXf xArg(1,3);
+    MatrixXf phiArg(1,3);
+
+    for(float t=0; t<=1; t+=step){
+
+        eePose1 = fwKin(qk);
+        x = eePose1.Pe;
+        Eigen::Matrix3f tmp;
+        tmp = eePose1.Re;
+        phi = tmp.eulerAngles(0,1,2);
+        vd = (xe(t,targetPosition,eePose.Pe)-xe(t-step,targetPosition,eePose.Pe)) / step;
+        phiddot = (phie(t,targetOrientation,phie0)-phie(t-step,targetOrientation,phie0)) / step;
+        xArg = xe(t,targetPosition,eePose.Pe);
+        phiArg = phie(t,targetOrientation,phie0);
+
+        dotqk = invDiffKinematiControlComplete(qk,x,xArg.transpose(),vd.transpose(),phi,phiArg.transpose(),phiddot.transpose(),kp,kphi);
+
+        qk1 = qk + dotqk.transpose()*step;
+        qk = qk1;
+        //cout << "qk1 -> " << qk1 << endl;
+        publish(qk1, pub_des_jstate);
+        
+    }
+
+    return qk1;
+}
+
+MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf phie, MatrixXf phid, MatrixXf phiddot, MatrixXf kp, MatrixXf kphi){
+    
+    MatrixXf J(6,6);
+    J = jacobian(q);
+    float alpha = phie(2);
+    float beta = phie(1);
+    float gamma = phie(0);
+
+    MatrixXf T(3,3);
+    T << cos(beta)*cos(gamma), -sin(gamma), 0,
+        cos(beta)*sin(gamma), cos(gamma), 0,
+        -sin(beta), 0, 1;
+    
+    MatrixXf Ta(6,6);
+    Ta << MatrixXf::Identity(3,3), MatrixXf::Zero(3,3),
+        MatrixXf::Zero(3,3), T;
+    
+    MatrixXf Ja = Ta.inverse()*J;
+    MatrixXf dotQ(6,1);
+    MatrixXf tmp(6,1);
+    tmp << (vd+kp*(xd-xe)),
+        (phiddot+kphi*(phid-phie));
+    dotQ = Ja.inverse()*tmp;
+
+    return dotQ;
+
+}
+
+MatrixXf jacobian(MatrixXf Th){
+    MatrixXf A(1,6);
+    MatrixXf D(1,6) ;
+    A << 0,-0.425,-0.3922,0,0,0;
+    D << 0.1625,0,0,0.1333,0.0997,0.0996;
+
+    MatrixXf J1(6,1);    
+    J1 << D(4)*(cos(Th(0))*cos(Th(4)) + cos(Th(1)+Th(2)+Th(3))*sin(Th(0))*sin(Th(4))) + D(2)*cos(Th(0)) + D(3)*cos(Th(0)) - A(2)*cos(Th(1))*sin(Th(0)) - A(1)*cos(Th(1))*sin(Th(0)) - D(4)*sin(Th(1)+Th(2)+Th(3))*sin(Th(0)),
+        D(4)*(cos(Th(4))*sin(Th(0)) - cos(Th(1)+Th(2)+Th(3))*cos(Th(0))*sin(Th(4))) + D(2)*sin(Th(0)) + D(3)*sin(Th(0)) + A(2)*cos(Th(0))*cos(Th(1)) + A(1)*cos(Th(0))*cos(Th(1)) + D(4)*sin(Th(1)+Th(2)+Th(3))*cos(Th(0)),
+        0,
+        0,
+        0,
+        1;
+    
+
+    MatrixXf J2(6,1);
+    /* J2 = [
+     -cos(th1)*(A3*sin(th2 + th3) + A2*sin(th2) + D5*(sin(th2 + th3)*sin(th4) - cos(th2 + th3)*cos(th4)) - D5*sin(th5)*(cos(th2 + th3)*sin(th4) + sin(th2 + th3)*cos(th4)));
+     -sin(th1)*(A3*sin(th2 + th3) + A2*sin(th2) + D5*(sin(th2 + th3)*sin(th4) - cos(th2 + th3)*cos(th4)) - D5*sin(th5)*(cos(th2 + th3)*sin(th4) + sin(th2 + th3)*cos(th4)));
+     A3*cos(th2 + th3) - (D5*sin(th2 + th3 + th4 + th5))/2 + A2*cos(th2) + (D5*sin(th2 + th3 + th4 - th5))/2 + D5*sin(th2 + th3 + th4);
+     sin(th1);
+     -cos(th1);
+     0]; */
+    //rewrite the code above considering that A1...A6 are A(0)...A(5) and D1...D6 are D(0)...D(5) and th1...th6 are Th(0)...Th(5)
+    J2 << -cos(Th(0))*(A(2)*sin(Th(1)+Th(2)) + A(1)*sin(Th(1)) + D(4)*(sin(Th(2)+Th(3))*sin(Th(3)) - cos(Th(1)+Th(2))*cos(Th(3))) - D(4)*sin(Th(4))*(cos(Th(1)+Th(2))*sin(Th(3)) + sin(Th(1)+Th(2))*cos(Th(3)))),
+        -sin(Th(0))*(A(2)*sin(Th(1)+Th(2)) + A(1)*sin(Th(1)) + D(4)*(sin(Th(1)+Th(2))*sin(Th(3)) - cos(Th(1)+Th(2))*cos(Th(3))) - D(4)*sin(Th(4))*(cos(Th(1)+Th(2))*sin(Th(3)) + sin(Th(1)+Th(2))*cos(Th(3)))),
+        A(2)*cos(Th(1)+Th(2)) - (D(4)*sin(Th(1)+Th(2)+Th(3)+Th(4)))/2 + A(1)*cos(Th(1)) + (D(4)*sin(Th(1)+Th(2)+Th(3)-Th(4)))/2 + D(4)*sin(Th(1)+Th(2)+Th(3)),
+        sin(Th(0)),
+        -cos(Th(0)),
+        0;
+
+
+    MatrixXf J3(6,1);
+    /* J3 << cos(Th(1))*(D(5)*cos(Th(2)+Th(3)+Th(4)) - A(3)*sin(Th(2)+Th(3)) + D(5)*sin(Th(2)+Th(3)+Th(4))*sin(Th(5))),
+        sin(Th(1))*(D(5)*cos(Th(2)+Th(3)+Th(4)) - A(3)*sin(Th(2)+Th(3)) + D(5)*sin(Th(2)+Th(3)+Th(4))*sin(Th(5))),
+        A(3)*cos(Th(2)+Th(3)) - (D(5)*sin(Th(2)+Th(3)+Th(4)+Th(5)))/2 + (D(5)*sin(Th(2)+Th(3)+Th(4)-Th(5)))/2 + D(5)*sin(Th(2)+Th(3)+Th(4)),
+        sin(Th(1)),
+        -cos(Th(1)),
+        0; */
+    //rewrite the code above decreasing all the indexes by 1
+    J3 << cos(Th(0))*(D(4)*cos(Th(1)+Th(2)+Th(3)) - A(2)*sin(Th(1)+Th(2)) + D(4)*sin(Th(1)+Th(2)+Th(3))*sin(Th(4))),
+        sin(Th(0))*(D(4)*cos(Th(1)+Th(2)+Th(3)) - A(2)*sin(Th(1)+Th(2)) + D(4)*sin(Th(1)+Th(2)+Th(3))*sin(Th(4))),
+        A(2)*cos(Th(1)+Th(2)) - (D(4)*sin(Th(1)+Th(2)+Th(3)+Th(4)))/2 + (D(4)*sin(Th(1)+Th(2)+Th(3)-Th(4)))/2 + D(4)*sin(Th(1)+Th(2)+Th(3)),
+        sin(Th(0)),
+        -cos(Th(0)),
+        0;
+    
+    MatrixXf J4(6,1);
+   /*  J4 << D(5)*cos(Th(1))*(cos(Th(2)+Th(3)+Th(4)) + sin(Th(2)+Th(3)+Th(4))*sin(Th(5))),
+        D(5)*sin(Th(1))*(cos(Th(2)+Th(3)+Th(4)) + sin(Th(2)+Th(3)+Th(4))*sin(Th(5))),
+        D(5)*(sin(Th(2)+Th(3)+Th(4)-Th(5))/2 + sin(Th(2)+Th(3)+Th(4)) - sin(Th(2)+Th(3)+Th(4)+Th(5))/2),
+        sin(Th(1)),
+        -cos(Th(1)),
+        0; */
+    //rewrite the code above decreasing all the indexes by 1
+    J4 << D(4)*cos(Th(0))*(cos(Th(1)+Th(2)+Th(3)) + sin(Th(1)+Th(2)+Th(3))*sin(Th(4))),
+        D(4)*sin(Th(0))*(cos(Th(1)+Th(2)+Th(3)) + sin(Th(1)+Th(2)+Th(3))*sin(Th(4))),
+        D(4)*(sin(Th(1)+Th(2)+Th(3)-Th(4))/2 + sin(Th(1)+Th(2)+Th(3)) - sin(Th(1)+Th(2)+Th(3)+Th(4))/2),
+        sin(Th(0)),
+        -cos(Th(0)),
+        0;
+
+    MatrixXf J5(6,1);
+    /* J5 << -D(5)*sin(Th(1))*sin(Th(5)) - D(5)*cos(Th(2)+Th(3)+Th(4))*cos(Th(1))*cos(Th(5)),
+        D(5)*cos(Th(1))*sin(Th(5)) - D(5)*cos(Th(2)+Th(3)+Th(4))*cos(Th(5))*sin(Th(1)),
+        -D(5)*(sin(Th(2)+Th(3)+Th(4)-Th(5))/2 + sin(Th(2)+Th(3)+Th(4)+Th(5))/2),
+        sin(Th(2)+Th(3)+Th(4))*cos(Th(1)),
+        sin(Th(2)+Th(3)+Th(4))*sin(Th(1)),
+        -cos(Th(2)+Th(3)+Th(4)); */
+    //rewrite the code above decreasing all the indexes by 1
+    J5 << -D(4)*sin(Th(0))*sin(Th(4)) - D(4)*cos(Th(1)+Th(2)+Th(3))*cos(Th(0))*cos(Th(4)),
+        D(4)*cos(Th(0))*sin(Th(4)) - D(4)*cos(Th(1)+Th(2)+Th(3))*cos(Th(4))*sin(Th(0)),
+        -D(4)*(sin(Th(1)+Th(2)+Th(3)-Th(4))/2 + sin(Th(1)+Th(2)+Th(3)+Th(4))/2),
+        sin(Th(1)+Th(2)+Th(3))*cos(Th(0)),
+        sin(Th(1)+Th(2)+Th(3))*sin(Th(0)),
+        -cos(Th(1)+Th(2)+Th(3));
+
+    MatrixXf J6(6,1);
+  /*   J6 << 0,
+        0,
+        0,
+        cos(Th(5))*sin(Th(1)) - cos(Th(2)+Th(3)+Th(4))*cos(Th(1))*sin(Th(5)),
+        -cos(Th(1))*cos(Th(5)) - cos(Th(2)+Th(3)+Th(4))*sin(Th(1))*sin(Th(5)),
+        -sin(Th(2)+Th(3)+Th(4))*sin(Th(5)); */
+    //rewrite the code above decreasing all the indexes by 1
+    J6 << 0,
+        0,
+        0,
+        cos(Th(4))*sin(Th(0)) - cos(Th(1)+Th(2)+Th(3))*cos(Th(0))*sin(Th(4)),
+        -cos(Th(0))*cos(Th(4)) - cos(Th(1)+Th(2)+Th(3))*sin(Th(0))*sin(Th(4)),
+        -sin(Th(1)+Th(2)+Th(3))*sin(Th(4));
+
+    MatrixXf J(6,6);
+    J << J1, J2, J3, J4, J5, J6;
+    
+    return J;
+}
+
 /**
  * @brief From euler angles to rotation matrix
  * 
@@ -213,6 +422,10 @@ void publish(MatrixXf publishPos, ros::Publisher pub_des_jstate){
         msg.data[i] = publishPos(0, i);
     }
 
+    for(int i = 0 ; i < currentGripper.cols() ; i++){
+        msg.data[i+6] = currentGripper(i);
+    }
+
     pub_des_jstate.publish(msg); // publish the message
 
     ros::spinOnce();   // allow data update from callback
@@ -235,7 +448,11 @@ void closeGripper(){
     for(int i=0; i<6; i++){
         msg.data[i] = currentPos(0,i); //keep same joint angles
     }
-    msg.data[6] = 2; msg.data[7] = 2.; msg.data[8] = 2.; //close the gripper
+    msg.data[6] = 3.14; msg.data[7] = 3.14; msg.data[8] = 3.14; //close the gripper
+
+    for(int i = 0 ; i < currentGripper.cols() ; i++){
+        currentGripper(i) = msg.data[i+6];
+    }
 
     pub_des_jstate.publish(msg); //publish the message
 
@@ -258,6 +475,10 @@ void openGripper(){
         msg.data[i] = currentPos(0,i); //keep same joint angles
     }
     msg.data[6] = 0.; msg.data[7] = 0.; msg.data[8] = 0.; //open the gripper
+
+    for(int i = 0 ; i < currentGripper.cols() ; i++){
+        currentGripper(i) = 0.;
+    }
 
     pub_des_jstate.publish(msg); //publish the message
 }
