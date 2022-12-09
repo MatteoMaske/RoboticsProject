@@ -16,15 +16,28 @@ def initCamera():
     init_params.camera_resolution = sl.RESOLUTION.HD720
     init_params.camera_fps = 30
     init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
+    init_params.coordinate_units = sl.UNIT.METER
     err = zed.open(init_params)
 
     # Try to open the camera
     if err != sl.ERROR_CODE.SUCCESS:
         print("An unexpected error occurred while opening the camera.")
         exit(1)
-    
+
+    # Object detection parameters
+    obj_param = sl.ObjectDetectionParameters()
+    obj_param.enable_tracking = False
+    obj_param.enable_mask_output = False
+    obj_param.image_sync = True
+
     zed_serial = zed.get_camera_information().serial_number
     print("Camera serial number: ", zed_serial)
+    
+    err = zed.enable_object_detection(obj_param)
+    if err != sl.ERROR_CODE.SUCCESS:
+        print("Object detection initialization failed.")
+        zed.close()
+        exit(1)
 
     return zed
 '''
@@ -84,9 +97,32 @@ def getDistForPoint(depth_map, point, depth_mode):
         print("Error: Maybe you're too far from the object?")
     return distance
 
+'''
+This function detects objects in the image and then prints the 
+information about them.
+@param zed: the zed camera object
+'''
+def captureData(zed):
+    #It will update the detection at each frame, to change this set the
+    # image_sync parameter to False in the object detection parameters in
+    # the initCamera function
+    objects = sl.Objects()
+    obj_runtimeParameters = sl.ObjectDetectionRuntimeParameters()
+    while zed.grab() == sl.ERROR_CODE.SUCCESS:
+        zed_error = zed.retrieve_objects(objects, obj_runtimeParameters)
+        if zed_error == sl.ERROR_CODE.SUCCESS:
+            for i in range(objects.object_list.size()):
+                obj = objects.object_list[i]
+                print("Object ID: {0} || Label: {1} || Confidence: {2} || Position: {3}".format(obj.id, obj.label, obj.confidence, obj.position))
+                print("Bounding box: {0}".format(obj.bounding_box_2d))
+                print("Tracking state: {0}")
+    zed.disable_object_detection()
+
 if __name__ == "__main__":
     zed = initCamera()
     captureImage(zed)
     getDepth(zed)
+    getImageandDepth(zed)
     getDistForPoint(zed, (0,0), sl.MEASURE.DEPTH)
+    captureData(zed)
     zed.close()
