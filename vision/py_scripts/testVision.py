@@ -5,6 +5,10 @@ import math
 ##
 # Questo è solo un po' di lavoro iniziale per comprendere meglio le API di ZED
 ##
+
+'''
+Function that initializes the camera and it's parameters
+'''
 def initCamera():
     # Initialize camera
     print("Initializing camera...")
@@ -13,7 +17,7 @@ def initCamera():
     # Set configuration parameters
     init_params = sl.InitParameters()
     init_params.sdk_verbose = False
-    init_params.camera_resolution = sl.RESOLUTION.HD720
+    init_params.camera_resolution = sl.RESOLUTION.WVGA
     init_params.camera_fps = 30
     init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
     init_params.coordinate_units = sl.UNIT.METER
@@ -51,16 +55,16 @@ def captureImage(camera):
         camera.retrieve_image(image, sl.VIEW.LEFT)
         timestamp = camera.get_timestamp(sl.TIME_REFERENCE.IMAGE)
         print("Image resolution : {0} x {1} || Image timestamp : {2}\n".format(image.get_width(), image.get_height(), timestamp))
-
+    return image
 '''
-This function retrieves only the depth map from the camera
+This function retrieves only the depth (in meters) map from the camera
 @param camera: the zed camera object
 '''
 def getDepth(camera):
     depth = sl.Mat()
     if (camera.grab() == sl.ERROR_CODE.success):
         camera.retrieve_measure(depth, sl.MEASURE.DEPTH)
-
+    return depth
 '''
 This function retrieves both the image and the depth map from the camera
 @param camera: the zed camera object
@@ -73,7 +77,7 @@ def getImageandDepth(camera):
         camera.retrieve_measure(depth, sl.MEASURE.DEPTH)
         timestamp = camera.get_timestamp(sl.TIME_REFERENCE.IMAGE)
         print("Image resolution : {0} x {1} || Image timestamp : {2}\n".format(image.get_width(), image.get_height(), timestamp))
-
+    return image, depth
 '''
 This function retrieves the depth of a certain point in the image
 @param depth_map: the depth map of the image or the point cloud
@@ -82,9 +86,9 @@ This function retrieves the depth of a certain point in the image
 '''
 def getDistForPoint(depth_map, point, depth_mode):
     distance = -1
-    if (sl.MEASURE.DEPTH):
+    if (depth_mode == sl.MEASURE.DEPTH):
         distance = depth_map.get_value(point[0], point[1])
-    elif (sl.MEASURE.XYZRGBA):
+    elif (depth_mode == sl.MEASURE.XYZRGBA):
         err, point_cloud_val = depth_map.get_value(point[0], point[1])
         distance = math.sqrt(point_cloud_val[0]**2, point_cloud_val[1]**2, point_cloud_val[2]**2)
     else :
@@ -117,12 +121,13 @@ def captureData(zed):
                 print("Bounding box: {0}".format(obj.bounding_box_2d))
                 print("Tracking state: {0}")
     zed.disable_object_detection()
+    return objects
 
 if __name__ == "__main__":
     zed = initCamera()
-    captureImage(zed)
-    getDepth(zed)
-    getImageandDepth(zed)
-    getDistForPoint(zed, (0,0), sl.MEASURE.DEPTH)
-    captureData(zed)
+    image = captureImage(zed)
+    depth = getDepth(zed)
+    image, depth = getImageandDepth(zed)
+    dist = getDistForPoint(zed, (0,0), sl.MEASURE.DEPTH)
+    objects = captureData(zed)
     zed.close()
