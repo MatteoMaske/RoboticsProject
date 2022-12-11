@@ -31,7 +31,7 @@ def initCamera():
     # Object detection parameters
     obj_param = sl.ObjectDetectionParameters()
     obj_param.enable_tracking = False
-    obj_param.enable_mask_output = False
+    obj_param.enable_mask_output = True
     obj_param.image_sync = True
 
     zed_serial = zed.get_camera_information().serial_number
