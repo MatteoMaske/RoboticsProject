@@ -1,7 +1,7 @@
-import torch
 import pyzed.sl as sl
 import numpy as np
 import math
+import cv2
 ##
 # Questo è solo un po' di lavoro iniziale per comprendere meglio le API di ZED
 ##
@@ -21,6 +21,8 @@ def initCamera():
     init_params.camera_fps = 30
     init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
     init_params.coordinate_units = sl.UNIT.METER
+    init_params.depth_minimum_distance = 0.1
+    init_params.depth_maximum_distance = 10
     err = zed.open(init_params)
 
     # Try to open the camera
@@ -87,7 +89,7 @@ This function retrieves the depth of a certain point in the image
 def getDistForPoint(depth_map, point, depth_mode):
     distance = -1
     if (depth_mode == sl.MEASURE.DEPTH):
-        distance = depth_map.get_value(point[0], point[1])
+        err, distance = depth_map.get_value(point[0], point[1])
     elif (depth_mode == sl.MEASURE.XYZRGBA):
         err, point_cloud_val = depth_map.get_value(point[0], point[1])
         distance = math.sqrt(point_cloud_val[0]**2, point_cloud_val[1]**2, point_cloud_val[2]**2)
@@ -115,7 +117,7 @@ def captureData(zed):
     while zed.grab() == sl.ERROR_CODE.SUCCESS:
         zed_error = zed.retrieve_objects(objects, obj_runtimeParameters)
         if zed_error == sl.ERROR_CODE.SUCCESS:
-            for i in range(objects.object_list.size()):
+            for i in range(len(objects.object_list)):
                 obj = objects.object_list[i]
                 print("Object ID: {0} || Label: {1} || Confidence: {2} || Position: {3}".format(obj.id, obj.label, obj.confidence, obj.position))
                 print("Bounding box: {0}".format(obj.bounding_box_2d))
@@ -125,7 +127,8 @@ def captureData(zed):
 
 if __name__ == "__main__":
     zed = initCamera()
-    image = captureImage(zed)
+    objects = captureImage(zed)
+    print(objects)
     depth = getDepth(zed)
     image, depth = getImageandDepth(zed)
     dist = getDistForPoint(zed, (0,0), sl.MEASURE.DEPTH)
