@@ -21,8 +21,8 @@ def initCamera():
     init_params.camera_fps = 30
     init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
     init_params.coordinate_units = sl.UNIT.METER
-    init_params.depth_minimum_distance = 0.1
-    init_params.depth_maximum_distance = 10
+    init_params.depth_minimum_distance = 0.3
+    init_params.depth_maximum_distance = 40
     err = zed.open(init_params)
 
     # Try to open the camera
