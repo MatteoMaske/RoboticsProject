@@ -2,6 +2,8 @@ import pyzed.sl as sl
 import numpy as np
 import math
 import cv2
+import os
+import subprocess
 ##
 # Questo è solo un po' di lavoro iniziale per comprendere meglio le API di ZED
 ##
@@ -126,11 +128,13 @@ def captureData(zed):
     return objects
 
 if __name__ == "__main__":
-    zed = initCamera()
-    objects = captureImage(zed)
-    print(objects)
-    depth = getDepth(zed)
-    image, depth = getImageandDepth(zed)
-    dist = getDistForPoint(zed, (0,0), sl.MEASURE.DEPTH)
-    objects = captureData(zed)
-    zed.close()
+    #zed = initCamera()
+    #image = captureImage(zed)
+    #changin working dir to images
+    os.chdir("images")
+    images_num = len(os.listdir("images"))
+    for file in os.listdir("images"):
+        image = cv2.imread(file)
+        np_image = np.array(image)
+        cv2.imwrite(f"images/{images_num}.png", Image.fromarray(np_image))
+    #zed.close()
