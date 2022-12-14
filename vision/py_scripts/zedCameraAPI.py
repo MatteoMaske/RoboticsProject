@@ -4,6 +4,7 @@ import math
 import cv2
 import os
 import subprocess
+from PIL import Image
 ##
 # Questo è solo un po' di lavoro iniziale per comprendere meglio le API di ZED
 ##
