@@ -1,0 +1,1 @@
+copy all these folders in locosim/ros_impedance_controller/worlds/model
