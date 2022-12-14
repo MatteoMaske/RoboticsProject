@@ -4,7 +4,9 @@ import rospy
 import torch
 from std_msgs.msg import String
 import pyzed.sl as sl
-
+import cv2
+from PIL import Image
+import numpy as np
 def talker():
     pub = rospy.Publisher('chatter', String, queue_size=10)
     rospy.init_node('talker', anonymous=True)
@@ -14,6 +16,18 @@ def talker():
         rospy.loginfo(hello_str)
         pub.publish(hello_str)
         rate.sleep()
+'''
+This function retrieves only part of the image from the camera
+@image the image to be cropped`
+@pointA the top left point of the rectangle
+@pointB the bottom right point of the rectangle
+@return the cropped image
+'''
+def filterImage(image, pointA, pointB):
+    np.asarray(image)
+    image = image[pointA[0]:pointB[0], pointA[1]:pointB[1]]
+    return Image.fromarray(image)
+
 
 '''
 Function that initializes the camera and it's parameters
