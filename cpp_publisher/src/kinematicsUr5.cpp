@@ -10,8 +10,8 @@ using Eigen::MatrixXf;
 const float A[6] = {0, -0.425, -0.3922, 0, 0, 0};
 const float D[6] = {0.1625, 0, 0, 0.1333, 0.0997, 0.0996};
 struct EEPose{
-    MatrixXf Pe;
-    MatrixXf Re;
+    Eigen::Vector3f Pe;
+    Eigen::Matrix3f Re;
 };
 
 EEPose fwKin(MatrixXf Th); // This function will calculate the forward kinematics of the robot and return the position of the end effector

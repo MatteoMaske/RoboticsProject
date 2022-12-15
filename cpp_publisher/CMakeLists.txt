@@ -16,10 +16,10 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
 )
 
-add_executable(testUR5b src/testUR5b.cpp)
+add_executable(move src/move.cpp)
 
-target_link_libraries(testUR5b ${catkin_LIBRARIES})
-install(TARGETS testUR5b
+target_link_libraries(move ${catkin_LIBRARIES})
+install(TARGETS move
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
