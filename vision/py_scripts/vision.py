@@ -3,10 +3,18 @@
 import rospy
 import torch
 from std_msgs.msg import String
-import pyzed.sl as sl
+import sensor_msgs.msg
+#import pyzed.sl as sl
 import cv2
 from PIL import Image
 import numpy as np
+import time
+import subprocess
+
+ZED_LEFT_TOPIC = "/ur5/zed2/left/image_rect_color"
+ZED_DEPTH_TOPIC = "/ur5/zed2/depth/depth_registered"
+SLEEP_RATE = 5
+
 def talker():
     pub = rospy.Publisher('chatter', String, queue_size=10)
     rospy.init_node('talker', anonymous=True)
@@ -24,9 +32,10 @@ This function retrieves only part of the image from the camera
 @return the cropped image
 '''
 def filterImage(image, pointA, pointB):
-    np.asarray(image)
-    image = image[pointA[0]:pointB[0], pointA[1]:pointB[1]]
-    return Image.fromarray(image)
+    if image is Image.Image:
+        image_array = np.asarray(image)
+    image_array_cropped = image_array[pointA[0]:pointB[0], pointA[1]:pointB[1]]
+    return Image.fromarray(image_array_cropped)
 
 
 '''
@@ -70,16 +79,28 @@ def initCamera():
 
     return zed
 
+def onImageReceived(data):
+    rospy.loginfo(f"Received a message of size {data.height}x{data.width} at time {data.header.stamp}")
+    image = Image.fromarray(np.frombuffer(data.data, dtype=np.uint8).reshape(data.height, data.width, -1))
+    image.show()
+    rospy.sleep(.5)
+    ######
+    # Crop the image before returning it
+    cropped_image = image.crop((data.width/2, data.height/2, data.width, data.height))
+    ######
+    cropped_image.show()
+    rospy.sleep(SLEEP_RATE)
+    return image
+
 if __name__ == '__main__':
-    capture_thread = Thread(target=torch_thread,
-                            kwargs={'weights': opt.weights, 'img_size': opt.img_size, "conf_thres": opt.conf_thres})
-
-    zed = initCamera()
-
-
-
-    try:
-        talker()
-    except rospy.ROSInterruptException:
-        pass
+    # change ros rate to 10
+    ret = subprocess.call("rosrun rostime", shell=True)
+    while not rospy.is_shutdown():
+        ## Connect to the zed topic to get info about the images in np array format
+        rospy.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image, onImageReceived, queue_size=1)
+        #rospy.Subscriber(ZED_DEPTH_TOPIC, sensor_msgs.msg.Image, callback)
+        try:
+            talker()
+        except rospy.ROSInterruptException:
+            pass
     
