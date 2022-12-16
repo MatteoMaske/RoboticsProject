@@ -7,41 +7,55 @@
 
 using namespace std;
 
-typedef double radiants;
+/* typedef double radiants;
 typedef Eigen::Matrix<double, 3, 3> Matrix3d;
 typedef Eigen::Matrix<double, 3, 1> Vector3d;
 typedef Eigen::Matrix<double, 4, 4> Matrix4d;
-typedef Matrix3d RotationMatrix;
+typedef Matrix3d RotationMatrix; */
 
-Vector3d fromWorldToBase(Vector3d point);
+/* Vector3d fromWorldToBase(Vector3d point);
 Matrix4d transformPoint(Vector3d pointA, Vector3d pointB, vector<radiants> theta);
-Matrix4d transformPointAux(Vector3d translation, vector<radiants> theta);
+Matrix4d transformPointAux(Vector3d translation, vector<radiants> theta); */
 
-// TODO TEST THE FUNCTION
+Eigen::Vector3d transformationWorldToBase(Eigen::Vector3d pointInWorldFrame);
+
 int main(){
 
-    // Vector3d point;
-    // point << 0.8, 0.45, 0.9; //block in the world frame
-    // cout << fromWorldToBase(point) << endl;
+    //Define the point in the world frame
+    Eigen::Vector3d pointInWorldFrame(0.26, 0.63, 0.87);
 
-    Eigen::AngleAxisd rotation(M_PI / 4, Eigen::Vector3d::UnitY());
-
-// Crea la trasformazione affine a partire dalla rotazione
-    // Definisci la trasformazione affine come una rotazione di 45 gradi intorno all'asse y
-    Eigen::Affine3d transformation(rotation);
-
-    // Definisci il punto nel frame di riferimento
-    Eigen::Vector3d point_in_reference_frame(0.8, 0.23, 0.9);
-
-    // Calcola le coordinate del punto nel nuovo frame
-    Eigen::Vector3d point_in_new_frame = transformation * point_in_reference_frame;
-
-    std::cout << "Point in new frame: " << point_in_new_frame.transpose() << std::endl;
+    Eigen::Vector3d pointInBaseFrame = transformationWorldToBase(pointInWorldFrame);
+    std::cout << "Point in base frame: " << pointInBaseFrame.transpose() << std::endl;
 
     return 0;
 }
 
-Vector3d fromWorldToBase(Vector3d point){
+/**
+ * @brief takes a position in the world frame and returns the position in the base frame
+ * 
+ * @param pointInWorldFrame 
+ * @return Eigen::Vector3d 
+ */
+Eigen::Vector3d transformationWorldToBase(Eigen::Vector3d pointInWorldFrame){
+
+    //Define traslation and rotation
+    Eigen::Vector3d t(0.5, 0.35, 1.75);
+    Eigen::AngleAxisd r(M_PI, Eigen::Vector3d::UnitX());
+
+    //Create affine transformation from traslation and rotation
+    Eigen::Affine3d transformation(r);
+    transformation.pretranslate(t);
+
+    //Calculate coordinates of nwe frame
+    Eigen::Vector3d pointInBaseFrame = transformation * pointInWorldFrame;
+
+    //Some corrections
+    pointInBaseFrame[0] = pointInBaseFrame[0] - 1;
+
+    return pointInBaseFrame;
+}
+
+/* Vector3d fromWorldToBase(Vector3d point){
 
     //taken in input a point in the world frame, it returns the point in the base frame knowing 
     //the position of the base frame in the world frame and the orientation of the base frame in the world frame
@@ -96,4 +110,4 @@ Matrix4d transformPointAux(Vector3d translation, vector<radiants> theta){
                       R(2,0), R(2,1), R(2,2), translation(2),
                       0, 0, 0, 1;
     return transformPoint;
-}
+} */
