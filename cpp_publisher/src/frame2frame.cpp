@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 using namespace std;
 
@@ -19,13 +20,25 @@ Matrix4d transformPointAux(Vector3d translation, vector<radiants> theta);
 // TODO TEST THE FUNCTION
 int main(){
 
-    Vector3d point;
-    point << 0.8,0.45,0.9;
-    cout << fromWorldToBase(point) << endl;
+    // Vector3d point;
+    // point << 0.8, 0.45, 0.9; //block in the world frame
+    // cout << fromWorldToBase(point) << endl;
 
+    Eigen::AngleAxisd rotation(M_PI / 4, Eigen::Vector3d::UnitY());
+
+// Crea la trasformazione affine a partire dalla rotazione
+    // Definisci la trasformazione affine come una rotazione di 45 gradi intorno all'asse y
+    Eigen::Affine3d transformation(rotation);
+
+    // Definisci il punto nel frame di riferimento
+    Eigen::Vector3d point_in_reference_frame(0.8, 0.23, 0.9);
+
+    // Calcola le coordinate del punto nel nuovo frame
+    Eigen::Vector3d point_in_new_frame = transformation * point_in_reference_frame;
+
+    std::cout << "Point in new frame: " << point_in_new_frame.transpose() << std::endl;
 
     return 0;
-    
 }
 
 Vector3d fromWorldToBase(Vector3d point){
@@ -35,13 +48,25 @@ Vector3d fromWorldToBase(Vector3d point){
     //is 0.5, 0.35, 1.75 , pi, 0, 0
 
     Vector3d pointA;
-    pointA << 0.5, 0.35, 1.75;
-    vector<radiants> theta = {0, 0, M_PI};
-
-    Matrix4d transformPointMat = transformPoint(pointA, point, theta);
     Vector3d pointB;
-    pointB << transformPointMat(0,3), transformPointMat(1,3), transformPointMat(2,3);
-    return pointB;
+    pointA << 0, 0, 0;
+    pointB << 0.5, 0.35, 1.75;
+    vector<radiants> theta = {-M_PI, 0, 0};
+
+    Matrix4d transformPointMat = transformPoint(pointA, pointB, theta);
+    cout << transformPointMat << endl;
+
+    Vector3d pointDes;
+    // cout << "block<3,3>(0,0)" << endl;
+    // cout << transformPointMat.block<3,3>(0,0) << endl;
+    // cout << "block<3,1>(0,3)" << endl;
+    // cout << transformPointMat.block<3,1>(0,3) << endl;
+
+    cout << transformPointMat.block<3,1>(0,3) << endl;
+    cout << point << endl;
+    //pointDes = transformPointMat.block<3,1>(0,3) * point; //rottissimo
+    //pointDes << transformPointMat(0,3), transformPointMat(1,3), transformPointMat(2,3);
+    return pointDes;
 }
 
 Matrix4d transformPoint(Vector3d pointA, Vector3d pointB, vector<radiants> theta){
