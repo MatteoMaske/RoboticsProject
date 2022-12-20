@@ -15,9 +15,8 @@ using Eigen::MatrixXf;
 
 //=======GLOBAL VARIABLES=======
 ros::Publisher pub_des_jstate; //publish desired joint state
-MatrixXf currentPos(1,6);
-MatrixXf currentGripper(1,2);
-bool activateSubscriber = false;
+MatrixXf currentPos(1,6); //current joint angles
+MatrixXf currentGripper(1,2); //current gripper pos
 
 //=======FUNCTION DECLARATION=======
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
@@ -85,7 +84,6 @@ int main(int argc, char **argv){
             cout << "Current ee position: " << endl;
             cout << eePose.Pe.transpose() << endl;
         }else if(input == 4){
-            activateSubscriber = true;
             ros::spinOnce();
         }else{
             break;
@@ -201,42 +199,38 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
     
     cout << "Moving to target with differential kinematics-> " << targetPosition << endl;
 
-    EEPose eePose;
-
     /*calc initial end effector pose*/
+    EEPose eePose;
     eePose = fwKin(Th0);
 
-    /*from rotation matrix to euler angles*/
+    /*calc x0 and phie0*/
     MatrixXf phie0,x0;
     x0 = eePose.Pe;
     phie0 = eePose.Re.eulerAngles(0,1,2);
 
-    MatrixXf x(1,3); //position
-    MatrixXf phi(1,3); //orientation
-    Eigen::Matrix3f rotM; //rotation matrix
-    MatrixXf TH(8,6); //joint angles
-    EEPose eePose1;
-
     /*current position equals to homing procedure position*/
     currentPos = Th0;
 
-    /*some random matrix to be understood*/
+    /*Matrix to coorect the trajectory which otehrwise is bad approximated*/
     MatrixXf kp(3,3);
     kp = Eigen::Matrix3f::Identity(3,3)*100;
     MatrixXf kphi(3,3);
     kphi = Eigen::Matrix3f::Identity(3,3)*100;
 
-    cout << "Moving to target -> " << targetPosition << endl;
+    /*parameters for the loop*/
+    MatrixXf x(1,3); //position
+    MatrixXf phi(1,3); //orientation
+    EEPose eePose1;
 
-    /*parameters for jacobians*/
     MatrixXf qk(1,6);
     MatrixXf qk1(1,6);
-    qk = currentPos;
     MatrixXf vd(1,3);
     MatrixXf phiddot(1,3);
     MatrixXf dotqk(6,6);
     MatrixXf xArg(1,3);
     MatrixXf phiArg(1,3);
+
+    qk = currentPos; //initialize qk
 
     for(float t=dt; t<=1; t+=dt){
 
@@ -276,17 +270,20 @@ MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, Ma
     Ta << MatrixXf::Identity(3,3), MatrixXf::Zero(3,3),
         MatrixXf::Zero(3,3), T;
     
+    /*dumped least squares inverse of J*/
     MatrixXf Ja = Ta.inverse()*J;
-    //dumped least squares inverse of J
     MatrixXf dotQ(6,1);
     MatrixXf ve(6,1);
     MatrixXf Js(6,6);
+
     float k = pow(10,-6); //dumping factor
+
     ve << (vd+kp*(xd-xe)),
     (phiddot+kphi*(phid-phie));
     Js = Ja.transpose()*(Ja*Ja.transpose() + pow(k,2)*MatrixXf::Identity(6,6)).inverse();
     dotQ = Js*ve;
 
+    /*limit the velocity of the joints*/
     for(int i = 0; i < 6; i++){
         if(dotQ(i,0) > 2.5){
             dotQ(i,0) = 2.5;
@@ -426,7 +423,6 @@ void publish(MatrixXf publishPos){
 
     pub_des_jstate.publish(msg); // publish the message
 
-    ros::spinOnce();   // allow data update from callback
     loop_rate.sleep(); // sleep for the time remaining to let us hit our 1000Hz publish rate
 }
 
@@ -448,7 +444,6 @@ void changeGripper(float firstVal,float secondVal){
 
     //pub_des_jstate.publish(msg); //to do -> change publisher with new topic
 
-    ros::spinOnce();   // allow data update from callback
     loop_rate.sleep(); // sleep for the time remaining to let us hit our 1000Hz publish rate
 }
 
@@ -482,23 +477,24 @@ MatrixXf phie(float t, MatrixXf phief, MatrixXf phie0){
     return phi;
 }
 
+/**
+ * @brief callback for the joint state subscriber to print the current joint state
+ * 
+ * @param msg 
+ */
+
 void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg){
-    
-    
-    
-    if(activateSubscriber){
-        MatrixXf lastPos(1,6);
-        cout << "Last joint position -> " << endl;
-        for (int i = 0; i < ROBOT_JOINTS; i++){
-            cout << msg->position[i] << " ";
-            lastPos(i) = msg->position[i];
-        }
-        cout << endl;
 
-        EEPose eepose = fwKin(lastPos);
-        cout << "Last ee position -> " << endl;
-        cout << eepose.Pe.transpose() << endl;
-    }    
+    MatrixXf lastPos(1,6);
+    cout << "Last joint position -> " << endl;
+    for (int i = 0; i < ROBOT_JOINTS; i++){
+        cout << msg->position[i] << " ";
+        lastPos(i) = msg->position[i];
+    }
+    cout << endl;
 
-    activateSubscriber = false;
+    EEPose eepose = fwKin(lastPos);
+    cout << "Last ee position -> " << endl;
+    cout << eepose.Pe.transpose() << endl;
+
 }

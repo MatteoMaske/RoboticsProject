@@ -24,19 +24,26 @@ int main(){
     // point << 0.8, 0.45, 0.9; //block in the world frame
     // cout << fromWorldToBase(point) << endl;
 
-    Eigen::AngleAxisd rotation(M_PI / 4, Eigen::Vector3d::UnitY());
+    Eigen::AngleAxisd rotation(M_PI, Eigen::Vector3d::UnitX());
+    Vector3d traslation = {0.5, 0.35, 1.75};
 
-// Crea la trasformazione affine a partire dalla rotazione
-    // Definisci la trasformazione affine come una rotazione di 45 gradi intorno all'asse y
+    // Crea la trasformazione affine a partire dalla rotazione
     Eigen::Affine3d transformation(rotation);
+    transformation.pretranslate(traslation);
 
     // Definisci il punto nel frame di riferimento
-    Eigen::Vector3d point_in_reference_frame(0.8, 0.23, 0.9);
+    Vector3d point_in_reference_frame(0.8, 0.45, 0.9);
 
     // Calcola le coordinate del punto nel nuovo frame
-    Eigen::Vector3d point_in_new_frame = transformation * point_in_reference_frame;
+    Vector3d point_in_new_frame;
+    point_in_new_frame = transformation * point_in_reference_frame;
 
-    std::cout << "Point in new frame: " << point_in_new_frame.transpose() << std::endl;
+    // Vector3d traslation;
+    // traslation << 0.5, 0.35, 1.75;
+
+    // Vector3d point_translated = point_in_new_frame + traslation;
+
+    cout << "Point in new frame: " << point_in_new_frame << endl;
 
     return 0;
 }
