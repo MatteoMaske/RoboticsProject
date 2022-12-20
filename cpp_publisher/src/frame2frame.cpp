@@ -19,16 +19,16 @@ Matrix4d transformPointAux(Vector3d translation, vector<radiants> theta); */
 
 Eigen::Vector3d transformationWorldToBase(Eigen::Vector3d pointInWorldFrame);
 
-int main(){
+// int main(){
 
-    //Define the point in the world frame
-    Eigen::Vector3d pointInWorldFrame(0.26, 0.63, 0.87);
+//     //Define the point in the world frame
+//     Eigen::Vector3d pointInWorldFrame(0.26, 0.63, 0.87);
 
-    Eigen::Vector3d pointInBaseFrame = transformationWorldToBase(pointInWorldFrame);
-    std::cout << "Point in base frame: " << pointInBaseFrame.transpose() << std::endl;
+//     Eigen::Vector3d pointInBaseFrame = transformationWorldToBase(pointInWorldFrame);
+//     std::cout << "Point in base frame: " << pointInBaseFrame.transpose() << std::endl;
 
-    return 0;
-}
+//     return 0;
+// }
 
 /**
  * @brief takes a position in the world frame and returns the position in the base frame

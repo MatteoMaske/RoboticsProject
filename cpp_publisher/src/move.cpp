@@ -5,6 +5,7 @@
 #include <sensor_msgs/JointState.h>
 #include "ros/ros.h"
 #include "kinematicsUr5.cpp"
+#include "frame2frame.cpp"
 
 #define LOOPRATE 1000 //rate of ros loop
 #define ROBOT_JOINTS 6 //number of joints of the robot
@@ -42,7 +43,7 @@ int main(int argc, char **argv){
     ros::Subscriber sub = node1.subscribe("/ur5/joint_states", 1, jointStateCallback); //subscriber for joint state
     /*initial joint angles*/
     MatrixXf Th0(1,6);
-    Th0 << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //homing procedure joint angles
+    Th0 << -0.32,-0.78, -2.56,-1.63, -1.57, 3.49; //homing procedure joint angles
 
     /*initial gripper pos*/
     currentPos = Th0;
@@ -70,10 +71,19 @@ int main(int argc, char **argv){
 
         if(input == 1){
 
-            cout << "Insert the posistion coordinate: " << endl;
-            cin >> xef(0,0) >> xef(0,1) >> xef(0,2);
+            // cout << "Insert the posistion coordinate: " << endl;
+            // cin >> xef(0,0) >> xef(0,1) >> xef(0,2);
             // cout << "Insert the orientation coordinate: " << endl;
             // cin >> phief(0,0) >> phief(0,1) >> phief(0,2);
+            Eigen::Vector3d tmp;
+            cout << "Insert the posistion coordinate: " << endl;
+            cout << "x: "; cin >> tmp(0);
+            cout << "y: "; cin >> tmp(1);
+            cout << "z: "; cin >> tmp(2);
+
+            // tmp = transformationWorldToBase(tmp);
+            xef(0,0) = tmp(0); xef(0,1) = tmp(1); xef(0,2) = tmp(2);
+
             phief << 0, 0, 0;
             currentPos = computeMovementDifferential(currentPos, xef, phief,0.01); //compute the movement to the first brick in tavolo_brick.world
         }
@@ -87,8 +97,15 @@ int main(int argc, char **argv){
         }else if(input == 4){
             ros::spinOnce();
         }else if(input == 5){
+            //Coordinate of the point in the world frame
+            Eigen::Vector3d tmp;
             cout << "Insert the posistion coordinate: " << endl;
-            cin >> xef(0,0) >> xef(0,1) >> xef(0,2);
+            cout << "x: "; cin >> tmp(0);
+            cout << "y: "; cin >> tmp(1);
+            cout << "z: "; cin >> tmp(2);
+
+            tmp = transformationWorldToBase(tmp);
+            xef(0,0) = tmp(0); xef(0,1) = tmp(1); xef(0,2) = 0.6; //xef(0,2) = tmp(2);
             phief << 0, 0, 0;
             computeMovementInverse(currentPos, xef, phief);
         }else{
@@ -217,7 +234,7 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
     /*current position equals to homing procedure position*/
     currentPos = Th0;
 
-    /*Matrix to coorect the trajectory which otehrwise is bad approximated*/
+    /*Matrix to coorect the trajectory which otherwise is bad approximated*/
     MatrixXf kp(3,3);
     kp = Eigen::Matrix3f::Identity(3,3)*100;
     MatrixXf kphi(3,3);
@@ -249,7 +266,7 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
         phiArg = phie(t,targetOrientation,phie0);
 
         dotqk = invDiffKinematiControlComplete(qk,x,xArg.transpose(),vd.transpose(),phi,phiArg.transpose(),phiddot.transpose(),kp,kphi);
-        //cout << "dotqk -> " << dotqk << endl;
+        //cout << "dotqk -> " << dotqk.transpose() << endl;
         qk1 = qk + dotqk.transpose()*dt;
         qk = qk1;
         publish(qk1);        
@@ -282,7 +299,7 @@ MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, Ma
     MatrixXf ve(6,1);
     MatrixXf Js(6,6);
 
-    float k = pow(10,-6); //dumping factor
+    float k = pow(10,-5); //dumping factor
 
     ve << (vd+kp*(xd-xe)),
     (phiddot+kphi*(phid-phie));
@@ -291,11 +308,11 @@ MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, Ma
 
     /*limit the velocity of the joints*/
     for(int i = 0; i < 6; i++){
-        if(dotQ(i,0) > 2.5){
-            dotQ(i,0) = 2.5;
+        if(dotQ(i,0) > 3.14){
+            dotQ(i,0) = 3.;
         }
-        if(dotQ(i,0) < -2.5){
-            dotQ(i,0) = -2.5;
+        if(dotQ(i,0) < -3.14){
+            dotQ(i,0) = -3.;
         }
     }
 
@@ -388,7 +405,8 @@ MatrixXf toRotationMatrix(MatrixXf euler){
 void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef){
 
     cout << "MOVING PROCEDURE STARTED" << endl;
-
+    cout << "from -> " << qRef << endl;
+    
     ros::Rate loop_rate(LOOPRATE); //rate of the loop
 
     MatrixXf error (1,6);
@@ -401,8 +419,6 @@ void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef){
         vRef += 0.005*(vDes-vRef);
         qRef += dt*vRef*error/errorNorm;
         publish(qRef);
-        loop_rate.sleep();
-        ros::spinOnce(); 
     }while(errorNorm > 0.001);
 
     currentPos = qRef;
@@ -497,6 +513,7 @@ void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg){
         cout << msg->position[i] << " ";
         lastPos(i) = msg->position[i];
     }
+    currentPos = lastPos;
     cout << endl;
 
     EEPose eepose = fwKin(lastPos);
