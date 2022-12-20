@@ -21,8 +21,8 @@ Eigen::Vector3d transformationWorldToBase(Eigen::Vector3d pointInWorldFrame);
 
 // int main(){
 
-//     //Define the point in the world frame
-//     Eigen::Vector3d pointInWorldFrame(0.26, 0.63, 0.87);
+    //Define the point in the world frame
+    Eigen::Vector3d pointInWorldFrame(0.616, 0.739, 0.87);
 
 //     Eigen::Vector3d pointInBaseFrame = transformationWorldToBase(pointInWorldFrame);
 //     std::cout << "Point in base frame: " << pointInBaseFrame.transpose() << std::endl;
