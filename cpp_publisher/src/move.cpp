@@ -119,7 +119,7 @@ MatrixXf computeMovementInverse(MatrixXf Th0, MatrixXf targetPosition, MatrixXf 
 
     /*calc distance between initial and target position*/
     float targetDist = sqrt(pow( targetPosition(0,0) - eePose.Pe(0,0), 2 ) + pow( targetPosition(0,1) - eePose.Pe(1,0), 2 ) + pow( targetPosition(0,2) - eePose.Pe(2,0), 2 ));
-    float step = targetDist / 1000; //step size
+    float step = targetDist / 100; //step size
 
     /*from rotation matrix to euler angles*/
     MatrixXf phie0;
