@@ -62,10 +62,11 @@ int main(int argc, char **argv){
             cout << "[2] for coming back in homing procedure" << endl;
             cout << "[3] for getting current ee pos" << endl;
             cout << "[4] for getting current joint state" << endl;
+            cout << "[5] for moving to a point with inverse kinematics" << endl;
             cout << "[0] to exit" << endl;
             cin >> input;
 
-        }while(input != 0 && input != 1 && input != 2 && input != 3 && input != 4);
+        }while(input != 0 && input != 1 && input != 2 && input != 3 && input != 4 && input != 5);
 
         if(input == 1){
 
@@ -85,6 +86,11 @@ int main(int argc, char **argv){
             cout << eePose.Pe.transpose() << endl;
         }else if(input == 4){
             ros::spinOnce();
+        }else if(input == 5){
+            cout << "Insert the posistion coordinate: " << endl;
+            cin >> xef(0,0) >> xef(0,1) >> xef(0,2);
+            phief << 0, 0, 0;
+            computeMovementInverse(currentPos, xef, phief);
         }else{
             break;
         }
