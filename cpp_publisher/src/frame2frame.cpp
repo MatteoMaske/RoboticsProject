@@ -22,7 +22,7 @@ Eigen::Vector3d transformationWorldToBase(Eigen::Vector3d pointInWorldFrame);
 // int main(){
 
     //Define the point in the world frame
-    Eigen::Vector3d pointInWorldFrame(0.616, 0.739, 0.87);
+    //Eigen::Vector3d pointInWorldFrame(0.616, 0.739, 0.87);
 
 //     Eigen::Vector3d pointInBaseFrame = transformationWorldToBase(pointInWorldFrame);
 //     std::cout << "Point in base frame: " << pointInBaseFrame.transpose() << std::endl;
@@ -39,7 +39,7 @@ Eigen::Vector3d transformationWorldToBase(Eigen::Vector3d pointInWorldFrame);
 Eigen::Vector3d transformationWorldToBase(Eigen::Vector3d pointInWorldFrame){
 
     //Define traslation and rotation
-    Eigen::Vector3d t(0.5, 0.35, 1.75);
+    Eigen::Vector3d t(-0.5, 0.35, 1.75);
     Eigen::AngleAxisd r(M_PI, Eigen::Vector3d::UnitX());
 
     //Create affine transformation from traslation and rotation
@@ -50,7 +50,7 @@ Eigen::Vector3d transformationWorldToBase(Eigen::Vector3d pointInWorldFrame){
     Eigen::Vector3d pointInBaseFrame = transformation * pointInWorldFrame;
 
     //Some corrections
-    pointInBaseFrame[0] = pointInBaseFrame[0] - 1;
+    //pointInBaseFrame[0] = pointInBaseFrame[0] - 1;
 
     return pointInBaseFrame;
 }
