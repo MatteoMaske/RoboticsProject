@@ -117,7 +117,7 @@ int main(int argc, char **argv){
 }
 
 /**
- * @brief compute the movement without controlling the velocity
+ * @brief compute the movement with inverse kinematics without controlling the speed
  * 
  * @param Th0 
  * @param targetPosition 
@@ -218,6 +218,16 @@ MatrixXf computeMovementInverse(MatrixXf Th0, MatrixXf targetPosition, MatrixXf 
 
     return currentPos;
 }
+
+/**
+ * @brief Compute the movement using the differential kinematics
+ * 
+ * @param Th0 
+ * @param targetPosition 
+ * @param targetOrientation 
+ * @param dt 
+ * @return MatrixXf 
+ */
 MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation,float dt){
     
     cout << "Moving to target with differential kinematics-> " << targetPosition << endl;
@@ -276,6 +286,20 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
     return qk1;
 }
 
+/**
+ * @brief 
+ * 
+ * @param q 
+ * @param xe 
+ * @param xd 
+ * @param vd 
+ * @param phie 
+ * @param phid 
+ * @param phiddot 
+ * @param kp 
+ * @param kphi 
+ * @return MatrixXf 
+ */
 MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf phie, MatrixXf phid, MatrixXf phiddot, MatrixXf kp, MatrixXf kphi){
     
     MatrixXf J(6,6);
@@ -319,6 +343,13 @@ MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, Ma
     return dotQ;
 
 }
+
+/**
+ * @brief Calculate the jacobian
+ * 
+ * @param Th 
+ * @return MatrixXf 
+ */
 MatrixXf jacobian(MatrixXf Th){
     MatrixXf A(1,6);
     MatrixXf D(1,6) ;
