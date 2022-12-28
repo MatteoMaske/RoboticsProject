@@ -274,3 +274,15 @@ for label in labels:
     shutil.copy(roboflowSource + 'test/labels/' + label, destination + 'test/labels/')
 
 print('DONE MERGING ROBOFLOW DATASET')
+
+#Remove unnecessary directories
+print('REMOVINGa UNNECESSARY DIRECTORIES')
+shutil.rmtree(generalDestinationPath + 'datasetBlender')
+for block in blocks:
+    shutil.rmtree(generalDestinationPath + block)
+print('DONE REMOVING UNNECESSARY DIRECTORIES')
+
+#Zip dataset
+print('ZIPPING DATASET')
+shutil.make_archive(destination, 'zip', destination)
+print('DONE ZIPPING DATASET')
