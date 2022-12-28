@@ -2,10 +2,15 @@
 import shutil
 import os
 import random
+import cv2
 
-IMAGENUMBER = 342
+IMAGENUMBER = 1258
+PERCENTOFNEWIMAGES = 0.33
 
-folderName = 'datasetV4'
+folderName = 'dataset'
+
+#change the path of roboflow dataset
+roboflowFolder = '/home/stefano/datasets/MegaBlock Recognition.v7i.yolov5pytorch/'
 
 #change this to change the number of images in subsets
 TRAININGSET = 0.7
@@ -18,37 +23,56 @@ generalSourcePath = '/home/stefano/modelliMegaBlocks/megaBlockSet/sets/'
 #change this to change the destination path
 generalDestinationPath = '/home/stefano/datasets/'
 
+#calculate number of images for each block after augmentation
+numNewImages = int(IMAGENUMBER * PERCENTOFNEWIMAGES)
+
+FINALIMAGESNUMBER = IMAGENUMBER + numNewImages
+
 #Calculate the number of images for each set
-trainNumber = int(IMAGENUMBER * TRAININGSET)
-validNumber = int(IMAGENUMBER * VALIDSET)
-testNumber = IMAGENUMBER - trainNumber - validNumber
+trainNumber = int(FINALIMAGESNUMBER * TRAININGSET)
+validNumber = int(FINALIMAGESNUMBER * VALIDSET)
+testNumber = FINALIMAGESNUMBER - trainNumber - validNumber
 
 ###############################################################################################
+augment = False
+while True:
+    keyInput = input('Do you want to augment dataset? (y/n)')
+    if keyInput == 'y':
+        print('Dataset will be augmented')
+        augment = True
+        break
+    elif keyInput == 'n':
+        print('Dataset will not be augmented')
+        break
+    else:
+        print('Invalid input')
+
 #ORGINIZE FILES
 print('STARTING ORGANIZING FILES')
 
 #Create the index list
 index = []
-for n in range(1,IMAGENUMBER+1):
+for n in range(1,FINALIMAGESNUMBER+1):
     index.append(n)
 
 for block in blocks:
 
     #check if block folder exists
-    if not os.path.exists(generalDestinationPath + block):
-        os.mkdir(generalDestinationPath + block)
-        os.mkdir(generalDestinationPath + block + '/train')
-        os.mkdir(generalDestinationPath + block + '/train/images')
-        os.mkdir(generalDestinationPath + block + '/train/labels')
-        os.mkdir(generalDestinationPath + block + '/valid')
-        os.mkdir(generalDestinationPath + block + '/valid/images')
-        os.mkdir(generalDestinationPath + block + '/valid/labels')
-        os.mkdir(generalDestinationPath + block + '/test')
-        os.mkdir(generalDestinationPath + block + '/test/images')
-        os.mkdir(generalDestinationPath + block + '/test/labels')
-        print('  Created folder for ' + block)
-    else:
-        print('  Folder ' + block + ' already exists')
+    if os.path.exists(generalDestinationPath + block):
+        shutil.rmtree(generalDestinationPath + block)
+
+    os.mkdir(generalDestinationPath + block)
+    os.mkdir(generalDestinationPath + block + '/train')
+    os.mkdir(generalDestinationPath + block + '/train/images')
+    os.mkdir(generalDestinationPath + block + '/train/labels')
+    os.mkdir(generalDestinationPath + block + '/valid')
+    os.mkdir(generalDestinationPath + block + '/valid/images')
+    os.mkdir(generalDestinationPath + block + '/valid/labels')
+    os.mkdir(generalDestinationPath + block + '/test')
+    os.mkdir(generalDestinationPath + block + '/test/images')
+    os.mkdir(generalDestinationPath + block + '/test/labels')
+
+    print('  Created folder for ' + block)
 
     print('  Working on ' + block)
 
@@ -56,6 +80,58 @@ for block in blocks:
     imagesPath = generalSourcePath + block + '/'
     labelsPath = generalSourcePath + block + '/labels/'
     destinationPath = generalDestinationPath + block + '/'
+
+    #Modify images with OpenCV
+    if augment:
+        print('    Augmenting images for ' + block)
+        count = 0
+        #numNewImages = int(IMAGENUMBER * PERCENTOFNEWIMAGES)
+        for n in range(0,numNewImages):
+            
+            count = count + 1
+
+            randList = []
+            tmp = random.randint(1,IMAGENUMBER)
+            while(tmp in randList):
+                tmp = random.randint(1,IMAGENUMBER)
+            randList.append(tmp)
+
+            imageName = block + '-' + str(tmp) + '.png'
+            #read image
+            img = cv2.imread(imagesPath + imageName)
+
+            k = random.randint(0,3)
+            if(k == 0):
+                #convert to gray
+                img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+            elif(k == 1):
+                #blur image
+                blur = random.randint(4,6)
+                img = cv2.blur(img, (blur,blur))
+            elif(k == 2):
+                #add noise
+                img = cv2.add(img, random.randint(50,100))
+            else:
+                #draw rectangle
+                for n in range(0,10):
+                    x1 = random.randint(0,500)
+                    y1 = random.randint(0,500)
+                    img = cv2.rectangle(img, (x1,y1), (x1+20,y1+20), (0,0,0), -1)
+
+            imageNum = IMAGENUMBER + count
+            newImageName = block + '-' + str(imageNum) + '.png'
+            newLabelName = block + '-' +  str(imageNum) + '.txt'
+
+            #save new label
+            with open(labelsPath + imageName[:-4] + '.txt', 'r') as f:
+                line = f.read()
+                with open(labelsPath + newLabelName, "w") as f1:
+                    f1.write(line)
+
+            #save new image
+            cv2.imwrite(imagesPath + newImageName, img)
+
+        print('    Done augmenting images for ' + block)
 
     #shuffle the index list
     random.shuffle(index)
@@ -100,20 +176,20 @@ print('STARTING MERGING DATASETS')
 
 #generalDestinationPath = '/home/stefano/datasets/'
 
-#check if datasetBlocks exists
-if not os.path.exists(generalDestinationPath + 'datasetBlocks'):
-    os.mkdir(generalDestinationPath + 'datasetBlocks')
-    os.mkdir(generalDestinationPath + 'datasetBlocks/train')
-    os.mkdir(generalDestinationPath + 'datasetBlocks/train/images')
-    os.mkdir(generalDestinationPath + 'datasetBlocks/train/labels')
-    os.mkdir(generalDestinationPath + 'datasetBlocks/valid')
-    os.mkdir(generalDestinationPath + 'datasetBlocks/valid/images')
-    os.mkdir(generalDestinationPath + 'datasetBlocks/valid/labels')
-    os.mkdir(generalDestinationPath + 'datasetBlocks/test')
-    os.mkdir(generalDestinationPath + 'datasetBlocks/test/images')
-    os.mkdir(generalDestinationPath + 'datasetBlocks/test/labels')
-else:
-    print('  Folder datasetBlocks already exists')
+#check if datasetBlender exists
+if os.path.exists(generalDestinationPath + 'datasetBlender'):
+    shutil.rmtree(generalDestinationPath + 'datasetBlender')
+
+os.mkdir(generalDestinationPath + 'datasetBlender')
+os.mkdir(generalDestinationPath + 'datasetBlender/train')
+os.mkdir(generalDestinationPath + 'datasetBlender/train/images')
+os.mkdir(generalDestinationPath + 'datasetBlender/train/labels')
+os.mkdir(generalDestinationPath + 'datasetBlender/valid')
+os.mkdir(generalDestinationPath + 'datasetBlender/valid/images')
+os.mkdir(generalDestinationPath + 'datasetBlender/valid/labels')
+os.mkdir(generalDestinationPath + 'datasetBlender/test')
+os.mkdir(generalDestinationPath + 'datasetBlender/test/images')
+os.mkdir(generalDestinationPath + 'datasetBlender/test/labels')
 
 for block in blocks:
     print('  Working on ' + block)
@@ -125,27 +201,27 @@ for block in blocks:
     images = os.listdir(currentPath + '/train/images')
     labels = os.listdir(currentPath + '/train/labels')
     for image in images:
-        shutil.copy(currentPath + '/train/images/' + image, generalDestinationPath + 'datasetBlocks/train/images')
+        shutil.copy(currentPath + '/train/images/' + image, generalDestinationPath + 'datasetBlender/train/images')
     for label in labels:
-        shutil.copy(currentPath + '/train/labels/' + label, generalDestinationPath + 'datasetBlocks/train/labels')
+        shutil.copy(currentPath + '/train/labels/' + label, generalDestinationPath + 'datasetBlender/train/labels')
 
     #copy validation images and labels
     print('     Copying validation images and labels')
     images = os.listdir(currentPath + '/valid/images')
     labels = os.listdir(currentPath + '/valid/labels')
     for image in images:
-        shutil.copy(currentPath + '/valid/images/' + image, generalDestinationPath + 'datasetBlocks/valid/images')
+        shutil.copy(currentPath + '/valid/images/' + image, generalDestinationPath + 'datasetBlender/valid/images')
     for label in labels:
-        shutil.copy(currentPath + '/valid/labels/' + label, generalDestinationPath + 'datasetBlocks/valid/labels')
+        shutil.copy(currentPath + '/valid/labels/' + label, generalDestinationPath + 'datasetBlender/valid/labels')
 
     #copy test images and labels
     print('     Copying test images and labels')
     images = os.listdir(currentPath + '/test/images')
     labels = os.listdir(currentPath + '/test/labels')
     for image in images:
-        shutil.copy(currentPath + '/test/images/' + image, generalDestinationPath + 'datasetBlocks/test/images')
+        shutil.copy(currentPath + '/test/images/' + image, generalDestinationPath + 'datasetBlender/test/images')
     for label in labels:
-        shutil.copy(currentPath + '/test/labels/' + label, generalDestinationPath + 'datasetBlocks/test/labels')
+        shutil.copy(currentPath + '/test/labels/' + label, generalDestinationPath + 'datasetBlender/test/labels')
     
     print('  Done with ' + block)
         
@@ -153,12 +229,13 @@ print('DONE MERGING DATASETS')
 ###############################################################################################
 print('STARTING COPYING ROBOFLOW DATASET')
 
-roboflowSource = '/home/stefano/datasets/MegaBlock Recognition.v6i.yolov5pytorch/' #source path
+roboflowSource = roboflowFolder #source path
 destination = '/home/stefano/datasets/' + folderName + '/' #destination path
 
 #Copy dataset directory
 print('  Copying dataset')
-source = '/home/stefano/datasets/datasetBlocks/'
+source = '/home/stefano/datasets/datasetBlender/'
+
 #remove directory if it exists
 if os.path.exists(destination):
     shutil.rmtree(destination)
