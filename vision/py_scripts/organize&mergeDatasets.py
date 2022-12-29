@@ -3,6 +3,7 @@ import shutil
 import os
 import random
 import cv2
+import zipfile
 
 IMAGENUMBER = 1258
 PERCENTOFNEWIMAGES = 0.33
@@ -284,5 +285,5 @@ print('DONE REMOVING UNNECESSARY DIRECTORIES')
 
 #Zip dataset
 print('ZIPPING DATASET')
-shutil.make_archive(destination, 'zip', destination)
+shutil.make_archive(destination, 'zip', generalDestinationPath, folderName)
 print('DONE ZIPPING DATASET')
