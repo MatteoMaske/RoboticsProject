@@ -43,7 +43,7 @@ int main(int argc, char **argv){
     ros::Subscriber sub = node1.subscribe("/ur5/joint_states", 1, jointStateCallback); //subscriber for joint state
     /*initial joint angles*/
     MatrixXf Th0(1,6);
-    Th0 << -0.32,-0.78, -2.56,-1.63, -1.57, 3.49; //homing procedure joint angles
+    Th0 << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //homing procedure joint angles
 
     /*initial gripper pos*/
     currentPos = Th0;
@@ -88,7 +88,11 @@ int main(int argc, char **argv){
             currentPos = computeMovementDifferential(currentPos, xef, phief,0.01); //compute the movement to the first brick in tavolo_brick.world
         }
         else if(input == 2){
-            homingProcedure(0.001,0.6, Th0, currentPos);
+            //homingProcedure(0.001,0.6, Th0, currentPos);
+            MatrixXf homePosition(1,6);
+            homePosition << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017;
+            publish(homePosition);
+            currentPos = homePosition;
         }else if(input==3){
             EEPose eePose;
             eePose = fwKin(currentPos);
@@ -246,9 +250,9 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
 
     /*Matrix to coorect the trajectory which otherwise is bad approximated*/
     MatrixXf kp(3,3);
-    kp = Eigen::Matrix3f::Identity(3,3)*100;
+    kp = Eigen::Matrix3f::Identity(3,3)*20;
     MatrixXf kphi(3,3);
-    kphi = Eigen::Matrix3f::Identity(3,3)*100;
+    kphi = Eigen::Matrix3f::Identity(3,3)*20;
 
     /*parameters for the loop*/
     MatrixXf x(1,3); //position
@@ -270,8 +274,10 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
         eePose1 = fwKin(qk);
         x = eePose1.Pe;
         phi = eePose1.Re.eulerAngles(0,1,2);
+
         vd = (xe(t,targetPosition,x0)-xe(t-dt,targetPosition,x0)) / dt;
         phiddot = (phie(t,targetOrientation,phie0)-phie(t-dt,targetOrientation,phie0)) / dt;
+
         xArg = xe(t,targetPosition,x0);
         phiArg = phie(t,targetOrientation,phie0);
 
@@ -279,6 +285,9 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
         //cout << "dotqk -> " << dotqk.transpose() << endl;
         qk1 = qk + dotqk.transpose()*dt;
         qk = qk1;
+        cout << "qk: " << qk << endl;
+        cout << "rot" << phi.transpose() << endl;
+        cout << "angular correction" << (kphi * (phie(t,targetOrientation,phie0)-phi.transpose()).transpose()).transpose() << endl;
         publish(qk1);        
     }
     MatrixXf positionReached = fwKin(qk1).Pe.transpose();
@@ -308,6 +317,8 @@ MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, Ma
     float beta = phie(1);
     float gamma = phie(0);
 
+    cout << "jacobi -> " << J << endl;
+
     MatrixXf T(3,3);
     T << cos(beta)*cos(gamma), -sin(gamma), 0,
         cos(beta)*sin(gamma), cos(gamma), 0,
@@ -332,11 +343,11 @@ MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, Ma
 
     /*limit the velocity of the joints*/
     for(int i = 0; i < 6; i++){
-        if(dotQ(i,0) > 3.14){
-            dotQ(i,0) = 3.;
+        if(dotQ(i,0) > M_PI){
+            dotQ(i,0) = M_PI;
         }
-        if(dotQ(i,0) < -3.14){
-            dotQ(i,0) = -3.;
+        if(dotQ(i,0) < -M_PI){
+            dotQ(i,0) = -M_PI;
         }
     }
 
@@ -354,11 +365,11 @@ MatrixXf jacobian(MatrixXf Th){
     MatrixXf A(1,6);
     MatrixXf D(1,6) ;
     A << 0,-0.425,-0.3922,0,0,0;
-    D << 0.1625,0,0,0.1333,0.0997,0.0996;
+    D << 0.1625,0,0,0.1333,0.0997,0.0996+0.14;
 
     MatrixXf J1(6,1);    
-    J1 << D(4)*(cos(Th(0))*cos(Th(4)) + cos(Th(1)+Th(2)+Th(3))*sin(Th(0))*sin(Th(4))) + D(2)*cos(Th(0)) + D(3)*cos(Th(0)) - A(2)*cos(Th(1))*sin(Th(0)) - A(1)*cos(Th(1))*sin(Th(0)) - D(4)*sin(Th(1)+Th(2)+Th(3))*sin(Th(0)),
-        D(4)*(cos(Th(4))*sin(Th(0)) - cos(Th(1)+Th(2)+Th(3))*cos(Th(0))*sin(Th(4))) + D(2)*sin(Th(0)) + D(3)*sin(Th(0)) + A(2)*cos(Th(0))*cos(Th(1)) + A(1)*cos(Th(0))*cos(Th(1)) + D(4)*sin(Th(1)+Th(2)+Th(3))*cos(Th(0)),
+    J1 << D(4)*(cos(Th(0))*cos(Th(4)) + cos(Th(1)+Th(2)+Th(3))*sin(Th(0))*sin(Th(4))) + D(2)*cos(Th(0)) + D(3)*cos(Th(0)) - A(2)*cos(Th(1)+Th(2))*sin(Th(0)) - A(1)*cos(Th(1))*sin(Th(0)) - D(4)*sin(Th(1)+Th(2)+Th(3))*sin(Th(0)),
+        D(4)*(cos(Th(4))*sin(Th(0)) - cos(Th(1)+Th(2)+Th(3))*cos(Th(0))*sin(Th(4))) + D(2)*sin(Th(0)) + D(3)*sin(Th(0)) + A(2)*cos(Th(1)+Th(2))*cos(Th(0)) + A(1)*cos(Th(0))*cos(Th(1)) + D(4)*sin(Th(1)+Th(2)+Th(3))*cos(Th(0)),
         0,
         0,
         0,
@@ -366,7 +377,7 @@ MatrixXf jacobian(MatrixXf Th){
     
 
     MatrixXf J2(6,1);
-    J2 << -cos(Th(0))*(A(2)*sin(Th(1)+Th(2)) + A(1)*sin(Th(1)) + D(4)*(sin(Th(2)+Th(3))*sin(Th(3)) - cos(Th(1)+Th(2))*cos(Th(3))) - D(4)*sin(Th(4))*(cos(Th(1)+Th(2))*sin(Th(3)) + sin(Th(1)+Th(2))*cos(Th(3)))),
+    J2 << -cos(Th(0))*(A(2)*sin(Th(1)+Th(2)) + A(1)*sin(Th(1)) + D(4)*(sin(Th(1)+Th(2))*sin(Th(3)) - cos(Th(1)+Th(2))*cos(Th(3))) - D(4)*sin(Th(4))*(cos(Th(1)+Th(2))*sin(Th(3)) + sin(Th(1)+Th(2))*cos(Th(3)))),
         -sin(Th(0))*(A(2)*sin(Th(1)+Th(2)) + A(1)*sin(Th(1)) + D(4)*(sin(Th(1)+Th(2))*sin(Th(3)) - cos(Th(1)+Th(2))*cos(Th(3))) - D(4)*sin(Th(4))*(cos(Th(1)+Th(2))*sin(Th(3)) + sin(Th(1)+Th(2))*cos(Th(3)))),
         A(2)*cos(Th(1)+Th(2)) - (D(4)*sin(Th(1)+Th(2)+Th(3)+Th(4)))/2 + A(1)*cos(Th(1)) + (D(4)*sin(Th(1)+Th(2)+Th(3)-Th(4)))/2 + D(4)*sin(Th(1)+Th(2)+Th(3)),
         sin(Th(0)),

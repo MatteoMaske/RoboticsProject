@@ -8,7 +8,7 @@ using Eigen::MatrixXf;
 
 //distance vectors
 const float A[6] = {0, -0.425, -0.3922, 0, 0, 0};
-const float D[6] = {0.1625, 0, 0, 0.1333, 0.0997, 0.0996};
+const float D[6] = {0.1625, 0, 0, 0.1333, 0.0997, 0.0996+0.14};
 struct EEPose{
     Eigen::Vector3f Pe;
     Eigen::Matrix3f Re;
