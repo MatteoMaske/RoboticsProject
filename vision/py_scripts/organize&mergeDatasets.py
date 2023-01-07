@@ -1,40 +1,47 @@
-#This script copy the images and labels from the selected folder to the selected destination
+#This script creates the dataset for YOLOv5
+
+""" YOU ONLY NEED TO CHANGE THE PATH FOR SOURCE AND DESTINATION FOLDERS """
+
 import shutil
 import os
 import random
 import cv2
-import zipfile
 
-IMAGENUMBER = 1258
+#change this to decide the percentage of new images
 PERCENTOFNEWIMAGES = 0.33
 
-folderName = 'dataset'
-
-#change the path of roboflow dataset
-roboflowFolder = '/home/stefano/datasets/MegaBlock Recognition.v7i.yolov5pytorch/'
-
-#change this to change the number of images in subsets
+#change this to decide the number of images in subsets
 TRAININGSET = 0.7
 VALIDSET = 0.2
 TESTSET = 0.1
 
-blocks = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2', 'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
+###############################################################################################
+folderName = 'dataset'
+#change path of roboflow dataset
+roboflowFolder = '/home/stefano/datasets/MegaBlock Recognition.v7i.yolov5pytorch/'
 #source path
 generalSourcePath = '/home/stefano/modelliMegaBlocks/megaBlockSet/sets/'
 #change this to change the destination path
 generalDestinationPath = '/home/stefano/datasets/'
+###############################################################################################
 
-#calculate number of images for each block after augmentation
+blocks = ['X1-Y1-Z2','X1-Y2-Z1','X1-Y2-Z2','X1-Y2-Z2-CHAMFER','X1-Y2-Z2-TWINFILLET','X1-Y3-Z2', 'X1-Y3-Z2-FILLET','X1-Y4-Z1','X1-Y4-Z2','X2-Y2-Z2','X2-Y2-Z2-FILLET']
+
+def countImages():
+    counter = 0
+    for item in os.listdir(generalSourcePath + blocks[0] + '/'):
+        if item.endswith('.png'):
+            counter += 1
+
+    return counter
+
+#Current number of images for each block
+IMAGENUMBER = countImages()
+#Calculate number of images for each block for augmentation
 numNewImages = int(IMAGENUMBER * PERCENTOFNEWIMAGES)
 
-FINALIMAGESNUMBER = IMAGENUMBER + numNewImages
-
-#Calculate the number of images for each set
-trainNumber = int(FINALIMAGESNUMBER * TRAININGSET)
-validNumber = int(FINALIMAGESNUMBER * VALIDSET)
-testNumber = FINALIMAGESNUMBER - trainNumber - validNumber
-
 ###############################################################################################
+#Ask if you want to augment dataset
 augment = False
 while True:
     keyInput = input('Do you want to augment dataset? (y/n)')
@@ -47,14 +54,10 @@ while True:
         break
     else:
         print('Invalid input')
+###############################################################################################
 
 #ORGINIZE FILES
 print('STARTING ORGANIZING FILES')
-
-#Create the index list
-index = []
-for n in range(1,FINALIMAGESNUMBER+1):
-    index.append(n)
 
 for block in blocks:
 
@@ -133,6 +136,22 @@ for block in blocks:
             cv2.imwrite(imagesPath + newImageName, img)
 
         print('    Done augmenting images for ' + block)
+
+    ############################################################################################################
+    if block == blocks[0]:
+        #Count image number for each block
+        counter = countImages()
+        
+        #Calculate the number of images for each set
+        trainNumber = int(counter * TRAININGSET)
+        validNumber = int(counter * VALIDSET)
+        testNumber = counter - trainNumber - validNumber
+
+        #Create the index list
+        index = []
+        for n in range(1,counter+1):
+            index.append(n)
+    ############################################################################################################
 
     #shuffle the index list
     random.shuffle(index)
@@ -277,7 +296,7 @@ for label in labels:
 print('DONE MERGING ROBOFLOW DATASET')
 
 #Remove unnecessary directories
-print('REMOVINGa UNNECESSARY DIRECTORIES')
+print('REMOVING UNNECESSARY DIRECTORIES')
 shutil.rmtree(generalDestinationPath + 'datasetBlender')
 for block in blocks:
     shutil.rmtree(generalDestinationPath + block)
