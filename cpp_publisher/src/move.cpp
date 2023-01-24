@@ -28,6 +28,7 @@ void publish(MatrixXf publishPos); //publish the joint angles
 MatrixXf computeMovementInverse(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation);//compute the movement
 MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation,float dt);//compute the movement
 MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf phie, MatrixXf phid, MatrixXf phiddot, MatrixXf kp, MatrixXf kphi);
+MatrixXf computeOrientationError(MatrixXf wRe, MatrixXf wRd);
 MatrixXf jacobian(MatrixXf Th);
 void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
 
@@ -243,12 +244,12 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
     /*calc x0 and phie0*/
     MatrixXf phie0,x0;
     x0 = eePose.Pe;
-    phie0 = eePose.Re.eulerAngles(0,1,2);
+    phie0 = eePose.Re.eulerAngles(2,1,0);
 
     /*current position equals to homing procedure position*/
     currentPos = Th0;
 
-    /*Matrix to coorect the trajectory which otherwise is bad approximated*/
+    /*Matrix to coorect the trajectory which otherwise is badly approximated*/
     MatrixXf kp(3,3);
     kp = Eigen::Matrix3f::Identity(3,3)*20;
     MatrixXf kphi(3,3);
@@ -257,6 +258,7 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
     /*parameters for the loop*/
     MatrixXf x(1,3); //position
     MatrixXf phi(1,3); //orientation
+    MatrixXf re(3,3); //rotation matrix
     EEPose eePose1;
 
     MatrixXf qk(1,6);
@@ -273,7 +275,8 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
 
         eePose1 = fwKin(qk);
         x = eePose1.Pe;
-        phi = eePose1.Re.eulerAngles(0,1,2);
+        re = eePose1.Re;
+        phi = eePose1.Re.eulerAngles(2,1,0);
 
         vd = (xe(t,targetPosition,x0)-xe(t-dt,targetPosition,x0)) / dt;
         phiddot = (phie(t,targetOrientation,phie0)-phie(t-dt,targetOrientation,phie0)) / dt;
@@ -281,7 +284,7 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
         xArg = xe(t,targetPosition,x0);
         phiArg = phie(t,targetOrientation,phie0);
 
-        dotqk = invDiffKinematiControlComplete(qk,x,xArg.transpose(),vd.transpose(),phi,phiArg.transpose(),phiddot.transpose(),kp,kphi);
+        dotqk = invDiffKinematiControlComplete(qk,x,xArg.transpose(),vd.transpose(),re,phiArg.transpose(),phiddot.transpose(),kp,kphi);
         //cout << "dotqk -> " << dotqk.transpose() << endl;
         qk1 = qk + dotqk.transpose()*dt;
         qk = qk1;
@@ -309,20 +312,27 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
  * @param kphi 
  * @return MatrixXf 
  */
-MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf phie, MatrixXf phid, MatrixXf phiddot, MatrixXf kp, MatrixXf kphi){
+MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf re, MatrixXf phid, MatrixXf phiddot, MatrixXf kp, MatrixXf kphi){
     
+    MatrixXf wRd(6,6);
+    wRd = toRotationMatrix(phid);
+
+    MatrixXf errorVector(3,1);
+    errorVector = computeOrientationError(re,wRd);
+
     MatrixXf J(6,6);
     J = jacobian(q);
-    float alpha = phie(2);
-    float beta = phie(1);
-    float gamma = phie(0);
-
-    cout << "jacobi -> " << J << endl;
+    float alpha = phid(2);
+    float beta = phid(1);
+    float gamma = phid(0);
 
     MatrixXf T(3,3);
     T << cos(beta)*cos(gamma), -sin(gamma), 0,
         cos(beta)*sin(gamma), cos(gamma), 0,
         -sin(beta), 0, 1;
+
+    MatrixXf omegaDot(3,3);
+    omegaDot = T*phiddot.transpose();
     
     MatrixXf Ta(6,6);
     Ta << MatrixXf::Identity(3,3), MatrixXf::Zero(3,3),
@@ -334,12 +344,14 @@ MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, Ma
     MatrixXf ve(6,1);
     MatrixXf Js(6,6);
 
-    float k = pow(10,-5); //dumping factor
+    float k = pow(10,-6); //dumping factor
 
     ve << (vd+kp*(xd-xe)),
-    (phiddot+kphi*(phid-phie));
-    Js = Ja.transpose()*(Ja*Ja.transpose() + pow(k,2)*MatrixXf::Identity(6,6)).inverse();
-    dotQ = Js*ve;
+    (omegaDot+kphi*errorVector);
+    //to change here 
+    //Js = (Ja+pow(k,2)*MatrixXf::Identity(6,6)).inverse(); 
+    
+    dotQ = (J+MatrixXf::Identity(6,6)*k).inverse()*ve;
 
     /*limit the velocity of the joints*/
     for(int i = 0; i < 6; i++){
@@ -353,6 +365,30 @@ MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, Ma
 
     return dotQ;
 
+}
+
+MatrixXf computeOrientationError(MatrixXf wRe, MatrixXf wRd){
+    
+    MatrixXf relativeOrientation(3,3);
+    relativeOrientation = wRe.transpose()*wRd;
+
+    //compute the delta angle
+    float cosDTheta = (relativeOrientation(0,0)+relativeOrientation(1,1)+relativeOrientation(2,2)-1)/2;
+    MatrixXf tmp(3,1);
+    tmp << relativeOrientation(2,1)-relativeOrientation(1,2),
+    relativeOrientation(0,2)-relativeOrientation(2,0),
+    relativeOrientation(1,0)-relativeOrientation(0,1);
+    float senDTheta = tmp.norm()/2;
+
+    float dTheta = atan2(senDTheta,cosDTheta);
+
+    if(dTheta == 0){
+        return MatrixXf::Zero(3,1);
+    }else{
+        MatrixXf axis(3,1);
+        axis = (1/(2*senDTheta))*tmp;
+        return wRe * axis * dTheta;
+    }
 }
 
 /**
