@@ -9,15 +9,19 @@
 
 #define LOOPRATE 1000 //rate of ros loop
 #define ROBOT_JOINTS 6 //number of joints of the robot
-#define EE_JOINTS 2 //number of joints of the end effector
+#define EE_SOFT_JOINTS 2 //number of joints of the end effector
+#define EE_HARD_JOINTS 3 //number of joints of the end effector
+
+#define HARD_GRIPPER 1
 
 using namespace std;
 using Eigen::MatrixXf;
+using Eigen::Vector3f;
 
 //=======GLOBAL VARIABLES=======
 ros::Publisher pub_des_jstate; //publish desired joint state
 MatrixXf currentPos(1,6); //current joint angles
-MatrixXf currentGripper(1,2); //current gripper pos
+MatrixXf currentGripper; //current gripper pos
 
 //=======FUNCTION DECLARATION=======
 MatrixXf xe(float t, MatrixXf xef, MatrixXf xe0); //linear interpolation of the position
@@ -27,12 +31,14 @@ void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef); //movi
 void publish(MatrixXf publishPos); //publish the joint angles
 MatrixXf computeMovementInverse(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation);//compute the movement
 MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, MatrixXf targetOrientation,float dt);//compute the movement
-MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf phie, MatrixXf phid, MatrixXf phiddot, MatrixXf kp, MatrixXf kphi);
+MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf re, MatrixXf phif, MatrixXf kp, MatrixXf kphi);
 MatrixXf computeOrientationError(MatrixXf wRe, MatrixXf wRd);
 MatrixXf jacobian(MatrixXf Th);
 void jointStateCallback(const sensor_msgs::JointState::ConstPtr& msg);
+void changeSoftGripper(float firstVal, float secondVal);
+void changeHardGripper(MatrixXf joints, Vector3f ee_joints);
+Vector3f mapToGripperJoints(float diameter);
 
-void changeGripper(float firstVal, float secondVal);
 //=======MAIN FUNCTION=======
 int main(int argc, char **argv){
 
@@ -48,7 +54,8 @@ int main(int argc, char **argv){
 
     /*initial gripper pos*/
     currentPos = Th0;
-    currentGripper << 0.0, 0.0;
+    if(HARD_GRIPPER) currentGripper.resize(1,3);
+    else currentGripper.resize(1,2);
 
     /*target position and orientation*/
     MatrixXf xef(1,3);
@@ -56,7 +63,6 @@ int main(int argc, char **argv){
     /* xef << 0.35, -0.15, 0.70;// 0.5, -0.5, 0.5;
     phief << 0, 0, 0; */
 
-    //currentPos = computeMovement(Th0, xef, phief, pub_des_jstate); //compute the movement to the first brick in tavolo_brick.world
     int input;
     while(1){
         do{
@@ -65,10 +71,11 @@ int main(int argc, char **argv){
             cout << "[3] for getting current ee pos" << endl;
             cout << "[4] for getting current joint state" << endl;
             cout << "[5] for moving to a point with inverse kinematics" << endl;
+            cout << "[6] for moving the gripper" << endl;
             cout << "[0] to exit" << endl;
             cin >> input;
 
-        }while(input != 0 && input != 1 && input != 2 && input != 3 && input != 4 && input != 5);
+        }while(input != 0 && input != 1 && input != 2 && input != 3 && input != 4 && input != 5 && input != 6);
 
         if(input == 1){
 
@@ -78,15 +85,17 @@ int main(int argc, char **argv){
             // cin >> phief(0,0) >> phief(0,1) >> phief(0,2);
             Eigen::Vector3d tmp;
             cout << "Insert the posistion coordinate: " << endl;
-            cout << "x: "; cin >> tmp(0);
-            cout << "y: "; cin >> tmp(1);
-            cout << "z: "; cin >> tmp(2);
+            cin >> tmp(0) >> tmp(1) >> tmp(2);
+            cout <<"Insert the orientation coordinate: " << endl;
+            cin >> phief(0) >> phief(1) >> phief(2);
 
-            // tmp = transformationWorldToBase(tmp);
-            xef(0,0) = tmp(0); xef(0,1) = tmp(1); xef(0,2) = tmp(2);
+            cout <<"Choose the reference frame [0] world [1] end effector: " << endl;
+            int refFrame;
+            cin >> refFrame;
+            if(refFrame == 0) tmp = transformationWorldToBase(tmp);
+            xef(0,0) = tmp(0); xef(0,1) = tmp(1); xef(0,2) = tmp(2)-0.07;
 
-            phief << 0, 0, 0;
-            currentPos = computeMovementDifferential(currentPos, xef, phief,0.01); //compute the movement to the first brick in tavolo_brick.world
+            currentPos = computeMovementDifferential(currentPos, xef, phief,0.001); //compute the movement to the first brick in tavolo_brick.world
         }
         else if(input == 2){
             //homingProcedure(0.001,0.6, Th0, currentPos);
@@ -113,6 +122,24 @@ int main(int argc, char **argv){
             xef(0,0) = tmp(0); xef(0,1) = tmp(1); xef(0,2) = 0.6; //xef(0,2) = tmp(2);
             phief << 0, 0, 0;
             computeMovementInverse(currentPos, xef, phief);
+        }else if(input == 6){
+
+            if(HARD_GRIPPER){
+                float diameter;
+                Vector3f ee_joints;
+                cout << "Insert the value of the gripper joints:" << endl;
+                cin >> ee_joints(0) >> ee_joints(1) >> ee_joints(2);
+                // cout << "Insert the diameter of the object: " << endl;
+                // cin >> diameter;
+                // ee_joints = mapToGripperJoints(diameter);
+                // cout << "Gripper joints: " << endl;
+                // cout << ee_joints.transpose() << endl;
+                changeHardGripper(currentPos,ee_joints);
+            }else{
+                cout << "Insert the value of the gripper joints:" << endl;
+                float value,value2;
+                cin >> value >> value2;
+            }   
         }else{
             break;
         }
@@ -251,23 +278,20 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
 
     /*Matrix to coorect the trajectory which otherwise is badly approximated*/
     MatrixXf kp(3,3);
-    kp = Eigen::Matrix3f::Identity(3,3)*20;
+    kp = Eigen::Matrix3f::Identity(3,3)*40;
     MatrixXf kphi(3,3);
-    kphi = Eigen::Matrix3f::Identity(3,3)*20;
+    kphi = Eigen::Matrix3f::Identity(3,3)*5;
 
     /*parameters for the loop*/
     MatrixXf x(1,3); //position
-    MatrixXf phi(1,3); //orientation
     MatrixXf re(3,3); //rotation matrix
     EEPose eePose1;
 
     MatrixXf qk(1,6);
     MatrixXf qk1(1,6);
     MatrixXf vd(1,3);
-    MatrixXf phiddot(1,3);
     MatrixXf dotqk(6,6);
     MatrixXf xArg(1,3);
-    MatrixXf phiArg(1,3);
 
     qk = currentPos; //initialize qk
 
@@ -276,25 +300,22 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
         eePose1 = fwKin(qk);
         x = eePose1.Pe;
         re = eePose1.Re;
-        phi = eePose1.Re.eulerAngles(2,1,0);
 
         vd = (xe(t,targetPosition,x0)-xe(t-dt,targetPosition,x0)) / dt;
-        phiddot = (phie(t,targetOrientation,phie0)-phie(t-dt,targetOrientation,phie0)) / dt;
-
         xArg = xe(t,targetPosition,x0);
-        phiArg = phie(t,targetOrientation,phie0);
 
-        dotqk = invDiffKinematiControlComplete(qk,x,xArg.transpose(),vd.transpose(),re,phiArg.transpose(),phiddot.transpose(),kp,kphi);
-        //cout << "dotqk -> " << dotqk.transpose() << endl;
-        qk1 = qk + dotqk.transpose()*dt;
+        dotqk = invDiffKinematiControlComplete(qk,x,xArg.transpose(),vd.transpose(),re,targetOrientation,kp,kphi);
+        qk1 = qk + dotqk.transpose()*dt; 
         qk = qk1;
-        cout << "qk: " << qk << endl;
-        cout << "rot" << phi.transpose() << endl;
-        cout << "angular correction" << (kphi * (phie(t,targetOrientation,phie0)-phi.transpose()).transpose()).transpose() << endl;
+        // cout << "qk: " << qk << endl;
+        // cout << "rot" << phi.transpose() << endl;
+        // cout << "angular correction" << (kphi * (phie(t,targetOrientation,phie0)-phi.transpose()).transpose()).transpose() << endl;
         publish(qk1);        
     }
     MatrixXf positionReached = fwKin(qk1).Pe.transpose();
+    MatrixXf orientationReached = fwKin(qk1).Re.eulerAngles(2,1,0).transpose();
     cout << "Target reached -> " << positionReached << endl;
+    cout << "Target orientation reached -> " << orientationReached << endl;
     return qk1;
 }
 
@@ -312,54 +333,39 @@ MatrixXf computeMovementDifferential(MatrixXf Th0, MatrixXf targetPosition, Matr
  * @param kphi 
  * @return MatrixXf 
  */
-MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf re, MatrixXf phid, MatrixXf phiddot, MatrixXf kp, MatrixXf kphi){
+MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf re, MatrixXf phif, MatrixXf kp, MatrixXf kphi){
     
     MatrixXf wRd(6,6);
-    wRd = toRotationMatrix(phid);
+    wRd = toRotationMatrix(phif);
 
     MatrixXf errorVector(3,1);
     errorVector = computeOrientationError(re,wRd);
 
     MatrixXf J(6,6);
     J = jacobian(q);
-    float alpha = phid(2);
-    float beta = phid(1);
-    float gamma = phid(0);
-
-    MatrixXf T(3,3);
-    T << cos(beta)*cos(gamma), -sin(gamma), 0,
-        cos(beta)*sin(gamma), cos(gamma), 0,
-        -sin(beta), 0, 1;
-
-    MatrixXf omegaDot(3,3);
-    omegaDot = T*phiddot.transpose();
-    
-    MatrixXf Ta(6,6);
-    Ta << MatrixXf::Identity(3,3), MatrixXf::Zero(3,3),
-        MatrixXf::Zero(3,3), T;
     
     /*dumped least squares inverse of J*/
-    MatrixXf Ja = Ta.inverse()*J;
     MatrixXf dotQ(6,1);
     MatrixXf ve(6,1);
-    MatrixXf Js(6,6);
 
     float k = pow(10,-6); //dumping factor
 
+    if(errorVector.norm() > 0.1){
+        errorVector = 0.1*errorVector.normalized();
+    }
+
     ve << (vd+kp*(xd-xe)),
-    (omegaDot+kphi*errorVector);
-    //to change here 
-    //Js = (Ja+pow(k,2)*MatrixXf::Identity(6,6)).inverse(); 
+    (kphi*errorVector);
     
     dotQ = (J+MatrixXf::Identity(6,6)*k).inverse()*ve;
 
     /*limit the velocity of the joints*/
     for(int i = 0; i < 6; i++){
         if(dotQ(i,0) > M_PI){
-            dotQ(i,0) = M_PI;
+            dotQ(i,0) = 3.;
         }
         if(dotQ(i,0) < -M_PI){
-            dotQ(i,0) = -M_PI;
+            dotQ(i,0) = -3.;
         }
     }
 
@@ -513,12 +519,26 @@ void homingProcedure(float dt, float vDes, MatrixXf qDes, MatrixXf qRef){
 void publish(MatrixXf publishPos){
 
     std_msgs::Float64MultiArray msg;
-    msg.data.resize(ROBOT_JOINTS); //6 joint angles
-    msg.data.assign(ROBOT_JOINTS,0); //empty the msg
     ros::Rate loop_rate(LOOPRATE);
 
-    for (int i = 0; i < ROBOT_JOINTS; i++){
-        msg.data[i] = publishPos(0, i);
+    if(HARD_GRIPPER){
+        msg.data.resize(ROBOT_JOINTS+EE_HARD_JOINTS); //6 joint angles + 3 hard gripper angles
+        msg.data.assign(ROBOT_JOINTS+EE_HARD_JOINTS,0); //empty the msg
+        
+
+        for (int i = 0; i < ROBOT_JOINTS; i++){
+            msg.data[i] = publishPos(0, i);
+        }
+        for(int i=0; i<EE_HARD_JOINTS; i++){
+            msg.data[i+ROBOT_JOINTS] = currentGripper(i);
+        }
+    }else{
+        msg.data.resize(ROBOT_JOINTS); //6 joint angles
+        msg.data.assign(ROBOT_JOINTS,0); //empty the msg
+
+        for (int i = 0; i < ROBOT_JOINTS; i++){
+            msg.data[i] = publishPos(0, i);
+        }
     }
 
     pub_des_jstate.publish(msg); // publish the message
@@ -531,13 +551,13 @@ void publish(MatrixXf publishPos){
  * 
  * @param currentPos 
  */
-void changeGripper(float firstVal,float secondVal){
+void changeSoftGripper(float firstVal,float secondVal){
 
     ros::Rate loop_rate(LOOPRATE);
 
     std_msgs::Float64MultiArray msg;
-    msg.data.resize(EE_JOINTS); //6 joint angles + 3 end effector joints
-    msg.data.assign(EE_JOINTS,0); //empty the msg
+    msg.data.resize(EE_SOFT_JOINTS); //6 joint angles + 3 end effector joints
+    msg.data.assign(EE_SOFT_JOINTS,0); //empty the msg
 
     msg.data[0] = firstVal;
     msg.data[1] = secondVal;
@@ -545,6 +565,40 @@ void changeGripper(float firstVal,float secondVal){
     //pub_des_jstate.publish(msg); //to do -> change publisher with new topic
 
     loop_rate.sleep(); // sleep for the time remaining to let us hit our 1000Hz publish rate
+}
+
+void changeHardGripper(MatrixXf joint, Vector3f ee_joints){
+
+    ros::Rate loop_rate(LOOPRATE);
+
+    std_msgs::Float64MultiArray msg;
+    msg.data.resize(ROBOT_JOINTS+EE_HARD_JOINTS); //6 joint angles + 3 end effector joints
+    msg.data.assign(ROBOT_JOINTS+EE_HARD_JOINTS,0); //empty the msg
+
+    for(int i = 0; i < ROBOT_JOINTS; i++)
+        msg.data[i] = joint(0,i);
+
+    msg.data[ROBOT_JOINTS+0] = ee_joints(0);
+    msg.data[ROBOT_JOINTS+1] = ee_joints(1);
+    msg.data[ROBOT_JOINTS+2] = ee_joints(2);
+
+    currentGripper = ee_joints;
+
+    pub_des_jstate.publish(msg); //to do -> change publisher with new topic
+
+    loop_rate.sleep(); // sleep for the time remaining to let us hit our 1000Hz publish rate
+}
+
+/**
+ * @brief This function computes the angles of the gripper joint based on the diameter given
+ * 
+ * @param diameter 
+ * @return Vector3f 
+ */
+Vector3f mapToGripperJoints(float diameter){
+    float alpha = (diameter - 22) / (130 - 22) * (-M_PI) + M_PI;
+    Vector3f gripperJoints = Vector3f::Ones(3) * alpha;
+    return gripperJoints;
 }
 
 /**

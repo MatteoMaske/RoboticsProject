@@ -1,3 +1,11 @@
+#TODO:
+# 1. Get the image from the zed camera using the topic
+# 2. Crop the image to the size of the object
+# 3. Use the cropped image to detect the object using yolo
+# 4. Use the topic to get the point in the world frame of the object as you see in ur5_generic.py
+# 5. Create an ad-hoc service/topic to send the point to move.cpp
+
+
 #!/usr/bin/env python
 # license removed for brevity
 import rospy
