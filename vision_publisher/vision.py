@@ -18,9 +18,11 @@ block2    1       0.4678    (x, y)
 block3    8       0.6534    (x, y)
 """
 
+IMGSZ = 1280
+
 model = YOLO('best.pt')
 
-results = model.predict(source='1.jpg', imgsz=1280, stream=True)
+results = model.predict(source='1.jpg', IMGSZ=1280, stream=True)
 
 matrix = np.empty((0,4))
 
