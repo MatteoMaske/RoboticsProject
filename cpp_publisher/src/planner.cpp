@@ -27,18 +27,22 @@ void startTopic(){
         cout << "Starting topic" << endl;
         cout << "Publishing first position" << endl;
         while(ros::ok()){
-                cout << "Publishing" << endl;
-                cpp_publisher::Coordinates msg;
-                msg.from.x = 0.8;
-                msg.from.y = 0.45;
-                msg.from.z = 0.9;
+                if(pub.getNumSubscribers() > 0){
+                    cout << "Publishing" << endl;
+                    cpp_publisher::Coordinates msg;
+                    msg.from.x = 0.8;
+                    msg.from.y = 0.65;
+                    msg.from.z = 0.9;
 
-                msg.to.x = 0.8;
-                msg.to.y = 0.45;
-                msg.to.z = 0.9;
+                    msg.to.x = 0.8;
+                    msg.to.y = 0.45;
+                    msg.to.z = 0.9;
 
-                pub.publish(msg);
-                loop_rate.sleep();
+                    pub.publish(msg);
+                    loop_rate.sleep();
+
+                    break;
+                }
         }
     }
 
