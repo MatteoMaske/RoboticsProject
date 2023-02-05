@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from ultralytics import YOLO #problem with catkin
+from ultralytics import YOLO
 import cv2
 import numpy as np
 import rospy
@@ -10,6 +10,7 @@ import sensor_msgs.msg
 from PIL import Image
 from cv_bridge import CvBridge
 from py_publisher.msg import BlockDetected #custom messages
+from py_publisher.msg import BlockInfo
 
 # result.boxes.xyxy   # box with xyxy format, (N, 4)
 # result.boxes.xywh   # box with xywh format, (N, 4)
@@ -62,10 +63,27 @@ def listener():
         rospy.sleep(SLEEP_RATE)
 
 def talker():
-    print("TODO")
+    print("NOT IMPLEMENTED")
+    # rospy.init_node('publisher',anonymous=True)
+    # pub = rospy.Publisher('vision/vision_detection', BlockDetected, queue_size=100)
+    # block = BlockInfo()
+    # block.objectClass = 1
+    # block.position = (1,2,3)
+    # block.id = 1
+
+    # msg = BlockDetected()
+    # msg.blockDetected.append(block)
+
+    
+
+    # while True:
+    #     print("Publishing")
+    #     pub.publish(msg)
+    #     rospy.sleep(SLEEP_RATE)
 
 if __name__ == '__main__':
     listener()
+    #talker()
 
 
 ############################################################################################

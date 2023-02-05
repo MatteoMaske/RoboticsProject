@@ -25,6 +25,8 @@ int main(int argc, char **argv)
     pub = n.advertise<cpp_publisher::Coordinates>("position", 100);
     ros::Subscriber sub = n.subscribe("vision/vision_detection", 100, visionCallback);
 
+    ros::spin();
+
     return 0;
 }
 
