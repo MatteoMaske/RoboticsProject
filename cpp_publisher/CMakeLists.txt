@@ -13,11 +13,14 @@ find_package(Eigen3 3.3 REQUIRED)
 add_message_files(
   FILES
   Coordinates.msg
+  BlockInfo.msg
+  BlockDetected.msg
 )
 
 generate_messages(
   DEPENDENCIES
   geometry_msgs
+  std_msgs
 )
 
 
@@ -49,6 +52,4 @@ install(TARGETS planner
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-add_dependencies(move $(catkin_EXPORTED_TARGETS))
-add_dependencies(planner $(catkin_EXPORTED_TARGETS))
 
