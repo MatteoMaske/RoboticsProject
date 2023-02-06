@@ -7,7 +7,10 @@
 
 #include <Eigen/Dense>
 
+#include <vector>
+
 #define DEBUG 1
+#define BLOCK_CLASSES 10
 
 using namespace std;
 using Eigen::Vector3f;
@@ -17,6 +20,7 @@ void visionCallback(const cpp_publisher::BlockDetected::ConstPtr& msg);
 Vector3f getTargetZone(int blockClass);
 
 ros::Publisher pub;
+vector<int> blockPerClass(BLOCK_CLASSES, 0);
 
 int main(int argc, char **argv)
 {
@@ -55,10 +59,20 @@ Vector3f getTargetZone(int blockClass){
 
     Vector3f target;
 
+    float offset = 0.07 * blockPerClass[blockClass-1]; // 0.05 is the offset between blocks of same class
+
+    blockPerClass[blockClass-1]+=1; // Increment the number of blocks of this class
+
     switch (blockClass)
     {
     case 1:
-        target << -0.3, 0.45, 0.9;
+        target << 0.9, 0.5+offset, 0.9;
+        break;
+    case 2:
+        target << 0.9, 0.5+offset, 0.9;
+        break;
+    case 3:
+        target << 0.9, 0.5+offset, 0.9;
         break;
     }
 
@@ -69,13 +83,13 @@ void visionCallback(const cpp_publisher::BlockDetected::ConstPtr& msg){
     
     if(DEBUG){
         cout << "Received vision callback" << endl;
-        cout << "Blocks detected:"<< endl;
-        for(int i = 0 ; i < msg->blockDetected.size() ; i++){
-            cout << "Block " << msg->blockDetected[i].id << endl;
-            cout << "Class: " << msg->blockDetected[i].objectClass << endl;
-            cout << "Position: " << msg->blockDetected[i].position.x << " " << msg->blockDetected[i].position.y << " " << msg->blockDetected[i].position.z << endl;
-            cout << endl;
-        }
+        // cout << "Blocks detected:"<< endl;
+        // for(int i = 0 ; i < msg->blockDetected.size() ; i++){
+        //     cout << "Block " << msg->blockDetected[i].id << endl;
+        //     cout << "Class: " << msg->blockDetected[i].objectClass << endl;
+        //     cout << "Position: " << msg->blockDetected[i].position.x << " " << msg->blockDetected[i].position.y << " " << msg->blockDetected[i].position.z << endl;
+        //     cout << endl;
+        // }
     }
 
     for(int i = 0; i < msg->blockDetected.size(); i++){
@@ -83,7 +97,7 @@ void visionCallback(const cpp_publisher::BlockDetected::ConstPtr& msg){
         blockPos << msg->blockDetected[i].position.x, msg->blockDetected[i].position.y, msg->blockDetected[i].position.z;
         int tmp = (msg->blockDetected[i].objectClass.data);
         sendMoveOrder(blockPos, tmp);
-        sleep(10);
+        sleep(15);
     }
 }
 

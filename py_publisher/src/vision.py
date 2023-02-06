@@ -81,12 +81,20 @@ def talker():
     block = BlockInfo()
     block.id = Int16(1)
     block.objectClass = Byte(1)
-    block.position = Point(1,1,1)
+    block.position = Point(0.1,0.45,0.9)
+
+    block1 = BlockInfo()
+    block1.id = Int16(2)
+    block1.objectClass = Byte(1)
+    block1.position = Point(0.1,0.65,0.9)
 
     msg = BlockDetected()
     msg.blockDetected.append(block)
+    msg.blockDetected.append(block1)
     
-    pub.publish(msg)
+    # while not rospy.is_shutdown():
+    #     pub.publish(msg)
+    #     rospy.sleep(SLEEP_RATE)
 
 def receivePointcloud(msg):
     points_list = []
@@ -120,7 +128,7 @@ if __name__ == '__main__':
     rospy.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image, callback) #subscribe to zed image
     rospy.Subscriber("/ur5/zed_node/point_cloud/cloud_registered", PointCloud2, receivePointcloud) #subscribe to zed point cloud
 
-    # talker()
+    #talker()
 
     while not rospy.is_shutdown():
         rospy.sleep(SLEEP_RATE)
