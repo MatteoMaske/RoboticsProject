@@ -11,6 +11,8 @@ from PIL import Image
 from cv_bridge import CvBridge
 from py_publisher.msg import BlockDetected #custom messages
 from py_publisher.msg import BlockInfo
+from std_msgs.msg import Byte, Int16
+from geometry_msgs.msg import Point
 
 # result.boxes.xyxy   # box with xyxy format, (N, 4)
 # result.boxes.xywh   # box with xywh format, (N, 4)
@@ -30,7 +32,7 @@ block3    8       0.6534    (x, y)
 
 ZED_LEFT_TOPIC = "/ur5/zed_node/left/image_rect_color"
 ZED_DEPTH_TOPIC = "/ur5/zed_node/depth/depth_registered"
-SLEEP_RATE = 10
+SLEEP_RATE = 1
 
 WEIGHT = '/home/stefano/ros_ws/src/visionData/best.pt'
 IMAGE = '/home/stefano/ros_ws/src/visionData/1.jpg'
@@ -64,22 +66,21 @@ def listener():
 
 def talker():
     print("NOT IMPLEMENTED")
-    # rospy.init_node('publisher',anonymous=True)
-    # pub = rospy.Publisher('vision/vision_detection', BlockDetected, queue_size=100)
-    # block = BlockInfo()
-    # block.objectClass = 1
-    # block.position = (1,2,3)
-    # block.id = 1
+    rospy.init_node('publisher',anonymous=True)
+    pub = rospy.Publisher('vision/vision_detection', BlockDetected, queue_size=100)
 
-    # msg = BlockDetected()
-    # msg.blockDetected.append(block)
+    block = BlockInfo()
+    block.objectClass = Byte(1)
+    block.position = Point(1,1,1)
+    block.id = Int16(1)
 
-    
+    msg = BlockDetected()
+    msg.blockDetected.append(block)
 
-    # while True:
-    #     print("Publishing")
-    #     pub.publish(msg)
-    #     rospy.sleep(SLEEP_RATE)
+    while not rospy.is_shutdown():
+        print("Publishing")
+        pub.publish(msg)
+        rospy.sleep(SLEEP_RATE)
 
 if __name__ == '__main__':
     listener()
