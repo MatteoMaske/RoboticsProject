@@ -4,6 +4,7 @@
 #include <cpp_publisher/Coordinates.h>
 #include <cpp_publisher/BlockInfo.h>
 #include <cpp_publisher/BlockDetected.h>
+#include <cpp_publisher/MoveOperation.h>
 
 #include <Eigen/Dense>
 
@@ -15,43 +16,58 @@
 using namespace std;
 using Eigen::Vector3f;
 
-void sendMoveOrder(Vector3f blockPos, int blockClass);
+void sendMoveOrder(Vector3f blockPos, int blockClass, int blockId);
 void visionCallback(const cpp_publisher::BlockDetected::ConstPtr& msg);
+void movementCallback(const cpp_publisher::MoveOperation::ConstPtr& msg);
 Vector3f getTargetZone(int blockClass);
 
 ros::Publisher pub;
 vector<int> blockPerClass(BLOCK_CLASSES, 0);
+bool movementSucceded = false;
 
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "planner");
     ros::NodeHandle n;
-    pub = n.advertise<cpp_publisher::Coordinates>("position", 100);
-    ros::Subscriber sub = n.subscribe("vision/vision_detection", 100, visionCallback);
+
+    pub = n.advertise<cpp_publisher::Coordinates>("/planner/position", 100);
+
+    ros::Subscriber visionSubscriber = n.subscribe("vision/vision_detection", 100, visionCallback);
+
+    ros::Subscriber moveSubscriber = n.subscribe("/move/movement_results", 100, movementCallback);
 
     ros::spin();
 
     return 0;
 }
 
-void sendMoveOrder(Vector3f blockPos, int blockClass){
+void sendMoveOrder(Vector3f blockPos, int blockClass, int blockId){
 
     if(DEBUG)cout << "Sending move order" << endl;
     
-    if(pub.getNumSubscribers() > 0){
-        cout << "Publishing" << endl;
-        cpp_publisher::Coordinates msg;
-        msg.from.x = blockPos(0);
-        msg.from.y = blockPos(1);
-        msg.from.z = blockPos(2);
+    while(ros::ok()){
+        if(pub.getNumSubscribers() > 0){
+            cout << "Publishing" << endl;
+            cpp_publisher::Coordinates msg;
 
-        Vector3f target = getTargetZone(blockClass);
+            std_msgs::Byte byteMsg;
+            byteMsg.data = blockId;
+            msg.blockId = byteMsg;
 
-        msg.to.x = target(0);
-        msg.to.y = target(1);
-        msg.to.z = target(2);
+            msg.from.x = blockPos(0);
+            msg.from.y = blockPos(1);
+            msg.from.z = blockPos(2);
 
-        pub.publish(msg);
+            Vector3f target = getTargetZone(blockClass);
+
+            msg.to.x = target(0);
+            msg.to.y = target(1);
+            msg.to.z = target(2);
+
+            pub.publish(msg);
+            
+            break;
+        }
     }
 }
 
@@ -94,11 +110,25 @@ void visionCallback(const cpp_publisher::BlockDetected::ConstPtr& msg){
 
     for(int i = 0; i < msg->blockDetected.size(); i++){
         Vector3f blockPos;
-        blockPos << msg->blockDetected[i].position.x, msg->blockDetected[i].position.y, msg->blockDetected[i].position.z;
-        int tmp = (msg->blockDetected[i].objectClass.data);
-        sendMoveOrder(blockPos, tmp);
-        sleep(15);
+        blockPos << msg->blockDetected[i].blockPosition.x, msg->blockDetected[i].blockPosition.y, msg->blockDetected[i].blockPosition.z;
+        int objectClass = (msg->blockDetected[i].blockClass.data);
+        int blockId = msg->blockDetected[i].blockId.data;
+        sendMoveOrder(blockPos, objectClass, blockId);
+        movementSucceded = false;
+        while(ros::ok()){
+            ros::spinOnce();
+            if(movementSucceded)break;
+        }
     }
+}
+
+void movementCallback(const cpp_publisher::MoveOperation::ConstPtr& msg){
+    if(DEBUG)cout << "Received movement callback" << endl;
+    
+    cout << "Movement result: " << msg->result << endl;
+
+    if(msg->result.data == "success")movementSucceded = true;
+    
 }
 
 

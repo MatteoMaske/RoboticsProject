@@ -15,6 +15,7 @@ add_message_files(
   Coordinates.msg
   BlockInfo.msg
   BlockDetected.msg
+  MoveOperation.msg
 )
 
 generate_messages(

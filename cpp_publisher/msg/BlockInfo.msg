@@ -1,3 +1,3 @@
-std_msgs/Int16 id
-std_msgs/Byte objectClass
-geometry_msgs/Point position
+std_msgs/Int16 blockId
+std_msgs/Byte blockClass
+geometry_msgs/Point blockPosition

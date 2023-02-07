@@ -4,8 +4,11 @@
 
 #include <ros/ros.h>
 #include <std_msgs/Float64MultiArray.h>
+#include <std_msgs/Byte.h>
+#include <std_msgs/String.h>
 #include <sensor_msgs/JointState.h>
 #include <cpp_publisher/Coordinates.h>
+#include <cpp_publisher/MoveOperation.h>
 
 #include "kinematicsUr5.cpp"
 #include "frame2frame.cpp"
@@ -25,6 +28,7 @@ using Eigen::Vector3f;
 
 //=======GLOBAL VARIABLES=======
 ros::Publisher pub_des_jstate; //publish desired joint state
+ros::Publisher pub_move_operation; //publish move operation
 MatrixXf currentJoint(1,6); //current joint angles
 MatrixXf currentGripper; //current gripper joint angles
 
@@ -39,7 +43,8 @@ MatrixXf computeOrientationError(MatrixXf wRe, MatrixXf wRd);
 MatrixXf jacobian(MatrixXf Th);
 
 void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& msg);
-void publish(MatrixXf publishPos); //publish the joint angles
+void publishJoint(MatrixXf publishPos); //publish the joint angles
+void publishMoveOperation(int blockId, bool success); //publish the joint angles
 void changeSoftGripper(float firstVal, float secondVal);
 void changeHardGripper(Vector3f ee_joints);
 Vector3f mapToGripperJoints(float diameter);
@@ -56,7 +61,9 @@ int main(int argc, char **argv){
     ros::NodeHandle node;
     pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1); //publisher for desired joint state
 
-    ros::Subscriber coordinateSubscriber = node.subscribe("/position", 1, coordinateCallback); //subscriber for block position
+    pub_move_operation = node.advertise<cpp_publisher::MoveOperation>("/move/movement_results", 1); //publisher for desired joint state
+
+    ros::Subscriber coordinateSubscriber = node.subscribe("/planner/position", 1, coordinateCallback); //subscriber for block position
     
 
     MatrixXf homingJoint(1,6);
@@ -64,10 +71,6 @@ int main(int argc, char **argv){
 
     MatrixXf customHomingJoint(1,6);
     customHomingJoint <<   -2.7907,-0.78, -2.56,-1.63, -1.57, 3.49;
-
-    EEPose homePose;
-    homePose = fwKin(customHomingJoint);
-    cout << "customPos: " << homePose.Pe.transpose() << endl;
 
     /*initial gripper pos*/
     currentJoint = customHomingJoint;
@@ -120,7 +123,7 @@ int main(int argc, char **argv){
                 computeMovementDifferential(pos, ori ,0.001); //compute the movement to the first brick in tavolo_brick.world
             }
             else if(input == 2){
-                publish(customHomingJoint);
+                publishJoint(customHomingJoint);
                 currentJoint = customHomingJoint;
             }else if(input==3){
                 EEPose eePose;
@@ -266,7 +269,7 @@ MatrixXf computeMovementInverse(MatrixXf Th0, Vector3f targetPosition, Vector3f 
         currentJoint = TH.row(minDistRow);
 
         /*ROS loop*/
-        publish(currentJoint);
+        publishJoint(currentJoint);
     }
 
     /*close the gripper when in position*/
@@ -325,7 +328,7 @@ void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrienta
         qk1 = qk + dotqk.transpose()*dt; 
         qk = qk1;
        
-        publish(qk1);        
+        publishJoint(qk1);        
     }
     currentJoint = qk1;
 }
@@ -495,11 +498,11 @@ MatrixXf toRotationMatrix(Vector3f euler){
 }
 
 /**
- * @brief publish the desired joint state
+ * @brief publishJoint the desired joint state
  * 
  * @param publishPos
  */
-void publish(MatrixXf publishPos){
+void publishJoint(MatrixXf publishPos){
 
     std_msgs::Float64MultiArray msg;
     ros::Rate loop_rate(LOOPRATE);
@@ -527,6 +530,26 @@ void publish(MatrixXf publishPos){
     pub_des_jstate.publish(msg); // publish the message
 
     loop_rate.sleep(); // sleep for the time remaining to let us hit our 1000Hz publish rate
+}
+
+void publishMoveOperation(int blockId, bool success){
+
+    cpp_publisher::MoveOperation msg;
+    std_msgs::Byte byteMsg;
+    std_msgs::String stringMsg;
+
+    byteMsg.data = blockId;
+
+    if(success){
+        stringMsg.data = "success";
+    }else{
+        stringMsg.data = "fail - Something went wrong";
+    }
+
+    msg.blockId = byteMsg;
+    msg.result = stringMsg;
+
+    pub_move_operation.publish(msg);
 }
 
 /**
@@ -642,7 +665,13 @@ void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& msg){
     pos = transformationWorldToBase(pos);
     target = transformationWorldToBase(target);
 
+    cout << "Moving block " << msg->blockId.data << endl;
+
     moveObject(pos, ori, target);
+
+    publishMoveOperation(msg->blockId.data, true);
+
+
 }
 
 void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
@@ -653,7 +682,16 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
 
     // Kinematics
     cout << "Starting kinematics" << endl;
+
+    //Moving in x,y
+    cout << "Moving in x,y" << endl;
+    Vector3f tmp = pos;
+    tmp(2) -= 0.2;
     computeMovementDifferential(pos, ori, 0.001);
+
+    //moving in z
+    cout << "Moving in z" << endl;
+    moveDown(0.2);
 
     // Grasping
     cout << "Grasping object" << endl;
@@ -695,13 +733,18 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     changeHardGripper(Vector3f::Ones()*1.8);
     sleep(1);
 
-    // Coming back to initial position
-    cout << "Homing" << endl;
-    moveUp(0.1);
-    MatrixXf homePosition(1,6);
-    homePosition << -2.7907, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //-0.322
-    publish(homePosition);
-    currentJoint = homePosition;
+    // Moving up
+    cout << "Moving up" << endl;
+    moveUp(0.2);
+
+    // Move in a safe position to take the next object
+    cout << "Moving in a safe position, waiting for other objects" << endl;
+    eePose = fwKin(currentJoint);
+    Vector3f currentPos = eePose.Pe;
+    if(currentPos(1)>-0.4){
+        eePose.Pe(1) = -0.5;
+        computeMovementDifferential(eePose.Pe, Vector3f::Zero(), 0.001);
+    }
     
 
 }
@@ -723,5 +766,3 @@ void moveDown(float distance){
 
     computeMovementDifferential(target, eepose.Re.eulerAngles(2,1,0), 0.001);
 }
-
-
