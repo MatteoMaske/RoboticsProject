@@ -15,6 +15,13 @@ from geometry_msgs.msg import Point
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs import point_cloud2
 import math
+import message_filters
+
+"""
+TODO:
+    - implement a function that generates unique id
+    - check if the z is right
+"""
 
 # result.boxes.xyxy   # box with xyxy format, (N, 4)
 # result.boxes.xywh   # box with xywh format, (N, 4)
@@ -34,14 +41,14 @@ block3    8    80
 
 ZED_LEFT_TOPIC = "/ur5/zed_node/left/image_rect_color"
 ZED_DEPTH_TOPIC = "/ur5/zed_node/depth/depth_registered"
-SLEEP_RATE = 1
+SLEEP_RATE = 10
 
 WEIGHT = '/home/stefano/ros_ws/src/visionData/best.pt'
 IMAGE = '/home/stefano/ros_ws/src/visionData/1.jpg'
 
 IMGSZ = 1280
 
-matrix = np.empty((0,2))
+matrix = np.empty((0,4))
 
 prevX, prevY = 0,0 #previous point
 pointX, pointY = 0,0 #current point
@@ -62,7 +69,9 @@ def findCenter(result):
 
     blockClass = int(result.boxes.cls.tolist()[0])
     global matrix
-    matrix = np.vstack((matrix, [0, blockClass]))
+    #TODO: check if the block is already in the matrix
+    #TODO: write getID(blockClass) function
+    matrix = np.vstack((matrix, [0, blockClass, x, y]))
 
     #print("xx: ", x)
     #print("yy: ", y)
@@ -118,6 +127,7 @@ def receivePointcloud(msg):
     print("prevX: ", prevX)
     print("prevY: ", prevY)
 
+    #if the point didn't change, don't do anything
     if not (abs(pointX - prevX) < 10 and abs(pointY - prevY) < 10):
 
         for data in point_cloud2.read_points(msg, field_names=['x','y','z'], skip_nans=False, uvs=[(pointX, pointY)]):
@@ -164,19 +174,28 @@ def talker(msg):
     # msg.blockDetected.append(block1)
     
     print("Publishing message:\n", msg)
+
     pub.publish(msg)
 
-    # while not rospy.is_shutdown():
-    #     pub.publish(msg)
-    #     rospy.sleep(SLEEP_RATE)
+def callback1(img, pointCloud):
+    bridge = CvBridge()
+    image = bridge.imgmsg_to_cv2(img, desired_encoding='passthrough')
+    # cv2.imshow('image',image)
+    # cv2.waitKey(0)
+    #cropImage() # need to crop the table
+    detect(image)
 
 if __name__ == '__main__':
 
     rospy.init_node('publisher',anonymous=True)
-    rospy.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image, callback) #subscribe to zed image
-    rospy.Subscriber("/ur5/zed_node/point_cloud/cloud_registered", PointCloud2, receivePointcloud) #subscribe to zed point cloud
 
-    #talker()
+    # rospy.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image, callback) #subscribe to zed image
+    # rospy.Subscriber("/ur5/zed_node/point_cloud/cloud_registered", PointCloud2, receivePointcloud) #subscribe to zed point cloud
+
+    imageSub = message_filters.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image) #subscribe to zed image
+    pointCloudSub = message_filters.Subscriber("/ur5/zed_node/point_cloud/cloud_registered", PointCloud2) #subscribe to zed point cloud
+    ts = message_filters.TimeSynchronizer([imageSub, pointCloudSub], 1)
+    ts.registerCallback(callback1)
 
     while not rospy.is_shutdown():
         rospy.sleep(SLEEP_RATE)
