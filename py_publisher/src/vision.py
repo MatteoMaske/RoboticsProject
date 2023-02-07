@@ -8,20 +8,18 @@ from std_msgs.msg import String
 from PIL import Image
 import sensor_msgs.msg
 from cv_bridge import CvBridge
-from py_publisher.msg import BlockDetected #custom messages
+# from py_publisher.msg import BlockDetected #custom messages
 from py_publisher.msg import BlockInfo
-from std_msgs.msg import Byte, Int16
+from std_msgs.msg import Byte, Int16, Bool
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs import point_cloud2
 import math
 import message_filters
+import threading
 
 """
 TODO:
-    - implement a function that generates unique id
-    - if pixels don't change, don't publish
-    done - check if the z is right [0.85 - 0.90]
     - crop the image to see only the table
 """
 
@@ -34,7 +32,9 @@ TODO:
 
 ZED_LEFT_TOPIC = "/ur5/zed_node/left/image_rect_color"
 ZED_POINT_CLOUD_TOPIC = "/ur5/zed_node/point_cloud/cloud_registered"
+PLANNER_DETECTION_REQUEST_TOPIC = "/planner/detection_request"
 # ZED_DEPTH_TOPIC = "/ur5/zed_node/depth/depth_registered"
+
 SLEEP_RATE = 10
 
 WEIGHT = '/home/stefano/ros_ws/src/visionData/best.pt'
@@ -42,20 +42,23 @@ WEIGHT = '/home/stefano/ros_ws/src/visionData/best.pt'
 
 IMGSZ = 1280
 
+#Z limits of the table
 MIN_Z = 0.85
 MAX_Z = 0.90
 
-def findCenter(result):
-    block = BlockInfo()
-    block.id = 1 #TODO: implement a function that generates unique id
-    block.objectClass = int(result.boxes.cls.tolist()[0]) #class of the block
+#Detection request sent by planner to enable the vision to publish
+detectionRequest = False
+#Mutex to access the Detection request variable
+semaphore = threading.Semaphore(1)
 
-    #find the center of the square for zed api
+def findCenter(result):
+
+    #Find the center of the square for zed api
     x1 = int(result.boxes.xyxy[0][0])
     y1 = int(result.boxes.xyxy[0][1])
     x2 = int(result.boxes.xyxy[0][2])
     y2 = int(result.boxes.xyxy[0][3])
-    #find the center of the square
+    #Find the center of the square
     x = int((x1 + x2) / 2)
     y = int((y1 + y2) / 2)
 
@@ -71,9 +74,13 @@ def findCenter(result):
     return info
 
 def detect(image):
+    #Get weights
     model = YOLO(WEIGHT)
+    #Detect blocks
     results = model.predict(source=image, imgsz=IMGSZ)
+
     list = []
+    #If results are not empty append the center of the square to the list
     if not (len(results[0]) == 0):
         for i in range(len(results[0])):
             list.append(findCenter(results[0][i]))
@@ -83,18 +90,13 @@ def detect(image):
     # print("List:\n", list)
     return list
 
-def buildMsg(listCoord):
+def buildMsg(block):
 
-    msg = BlockDetected()
+    msg = BlockInfo()
+    msg.blockId = Int16(block['id'])
+    msg.blockClass = Byte(block['class'])
+    msg.blockPosition = Point(block['x'], block['y'], block['z'])
 
-    for i in range(len(listCoord)):
-        block = BlockInfo()
-        block.id = Int16(listCoord[i]['id'])
-        block.objectClass = Byte(listCoord[i]['class'])
-        block.position = Point(listCoord[i]['x'], listCoord[i]['y'], listCoord[i]['z'])
-        msg.blockDetected.append(block)
-
-    print("Message:\n", msg)
     return msg
 
 def receivePointcloud(msg, list):
@@ -107,16 +109,13 @@ def receivePointcloud(msg, list):
         'z': 0
     }
 
-    x = list['x']
-    y = list['y']
-
-    #if the point didn't change, don't do anything
+    #If the point didn't change, don't do anything
     # if not (abs(x - prevX) < 10 and abs(y - prevY) < 10): # need to check if the point didn't changed
 
-    for data in point_cloud2.read_points(msg, field_names=['x','y','z'], skip_nans=False, uvs=[(x, y)]):
+    for data in point_cloud2.read_points(msg, field_names=['x','y','z'], skip_nans=False, uvs=[(list['x'], list['y'])]):
         points_list.append([data[0], data[1], data[2]]) #coordinates in the camera frame
 
-    #black magic
+    #Black magic
     base_offset = [0.5,0.35,1.75]
     x_c = [-0.9,0.24,-0.35]
 
@@ -124,65 +123,98 @@ def receivePointcloud(msg, list):
                         [-1., 0., 0.],
                         [-0., -0.86632, -0.49948]])
     
-    #coordinates in the world frame
+    #Coordinates in the world frame
     pointW = rotation.dot(points_list[0]) + x_c + base_offset
     # print("World coord: ", pointW)
 
-    #check if the point is a NaN
+    #Check if the point is a NaN
     if not (math.isnan(pointW[0]) and math.isnan(pointW[1]) and math.isnan(pointW[2])):
-        # buildMsg(pointW)
         listCoord['x'] = pointW[0]
         listCoord['y'] = pointW[1]
         listCoord['z'] = pointW[2]
     else:
         print("Nan detected")
-    
+
     # else:
     #     print("Point not changed")
 
-    return listCoord
+    #Check if the point is on the table
+    if listCoord['z'] >= MIN_Z or listCoord['z'] <= MAX_Z:
+        return listCoord
+    else:
+        return None
 
 def talker(msg):
     rospy.init_node('publisher',anonymous=True)
-    pub = rospy.Publisher('vision/vision_detection', BlockDetected, queue_size=100) #publish to planner
+    pub = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10) #Publish to planner
     
-    print("Publishing message:\n", msg)
-    pub.publish(msg)
+    if pub.get_num_connections() > 0:
+        print("Publishing message:\n", msg)
+        pub.publish(msg)
+    else:
+        print("No subscribers")
 
 def callback(img, pointCloud):
-    #convert image to cv2
-    bridge = CvBridge()
-    image = bridge.imgmsg_to_cv2(img, desired_encoding='passthrough')
 
-    #need to crop the image to get only the table
-    # cropImage()
+    global detectionRequest
 
-    #detect blocks with YOLO
-    list = detect(image)
+    print("Waiting for detection request")
 
-    #get coordinates from x,y pixels
-    listCoord = []
-    for i in range(len(list)):
-        if list[i]['z'] >= MIN_Z or list[i]['z'] <= MAX_Z:
-            listCoord.append(receivePointcloud(pointCloud, list[i]))
-        else:
-            print("Block out of z range")
+    #Wait for planner detection request
+    if detectionRequest:
 
-    #build the massage to publish it
-    msg = buildMsg(listCoord)
-    # print("Message:\n", msg)
-    
-    #publish the message
-    talker(msg)
+        print("Detection request received")
+
+        #Convert image to cv2
+        bridge = CvBridge()
+        image = bridge.imgmsg_to_cv2(img, desired_encoding='passthrough')
+
+        #need to crop the image to get only the table
+        # cropImage()
+
+        #Detect blocks with YOLO
+        list = detect(image)
+
+        #Get coordinates from x,y pixels
+        listCoord = []
+        for i in range(len(list)):
+            block = receivePointcloud(pointCloud, list[i])
+            if block != None: #check z limits
+                listCoord.append(block)
+
+        #Keep only the nearest block to the camera
+        if len(listCoord) > 1:
+            block = [min(listCoord, key=lambda x: x['x'])]
+
+        #Build the massage to publish it
+        msg = buildMsg(block)
+        # print("Message:\n", msg)
+        
+        #Disable the callback
+        semaphore.acquire()
+        detectionRequest = False
+        semaphore.release()
+
+        #Publish the message
+        talker(msg)
+
+def listenerDetectionReq(): #Listen to planner detection request
+    #Enable the callback
+    semaphore.acquire()
+    global detectionRequest
+    detectionRequest = True
+    semaphore.release()
 
 if __name__ == '__main__':
 
     rospy.init_node('publisher',anonymous=True)
 
-    imageSub = message_filters.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image) #subscribe to zed image
-    pointCloudSub = message_filters.Subscriber(ZED_POINT_CLOUD_TOPIC, PointCloud2) #subscribe to zed point cloud
+    imageSub = message_filters.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image) #Subscribe to zed image
+    pointCloudSub = message_filters.Subscriber(ZED_POINT_CLOUD_TOPIC, PointCloud2) #Subscribe to zed point cloud
     ts = message_filters.TimeSynchronizer([imageSub, pointCloudSub], 1)
     ts.registerCallback(callback)
+
+    rospy.Subscriber(PLANNER_DETECTION_REQUEST_TOPIC, Bool, listenerDetectionReq) #Subscribe to planner detectionRequest
 
     while not rospy.is_shutdown():
         rospy.sleep(SLEEP_RATE)
