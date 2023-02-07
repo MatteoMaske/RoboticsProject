@@ -669,6 +669,7 @@ void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& msg){
 
     moveObject(pos, ori, target);
 
+    cout << "Sending success message" << endl;
     publishMoveOperation(msg->blockId.data, true);
 
 
@@ -708,7 +709,7 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     //moving in x,y in a safer position
     cout << "Moving in x,y" << endl;
     eePose = fwKin(currentJoint);
-    Vector3f tmp = eePose.Pe;
+    tmp = eePose.Pe;
     //if the object is too close to the robot, move it away to avoid singularities
     if(tmp(1)>-0.4){
         tmp(1) = -0.5;
