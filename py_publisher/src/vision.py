@@ -18,7 +18,6 @@ import message_filters
 
 """
 TODO:
-    - crop the image to see only the table
 """
 
 # result.boxes.xyxy   # box with xyxy format, (N, 4)
@@ -38,16 +37,24 @@ SLEEP_RATE = 10
 WEIGHT = '/home/stefano/ros_ws/src/visionData/best.pt'
 # IMAGE = '/home/stefano/ros_ws/src/visionData/1.jpg'
 
-IMGSZ = 1280
-
 #Z limits of the table
-MIN_Z = 0.8
-MAX_Z = 0.95
+MIN_Z = 0.88
+MAX_Z = 0.92
 #X limits of the table
-MAX_X = 0.5
+MAX_X = 0.6
+
+#Pixel crop
+CROP_HEIGHT = 400
+CROP_WIDTH = 650
+
+#Debug mode
+DEBUG = False
 
 #Detection request sent by planner to enable the vision to publish
-detectionRequest = False
+if DEBUG:
+    detectionRequest = True
+else:
+    detectionRequest = False
 
 def findCenter(result):
 
@@ -56,7 +63,6 @@ def findCenter(result):
     y1 = int(result.boxes.xyxy[0][1])
     x2 = int(result.boxes.xyxy[0][2])
     y2 = int(result.boxes.xyxy[0][3])
-    #Find the center of the square
     x = int((x1 + x2) / 2)
     y = int((y1 + y2) / 2)
 
@@ -74,8 +80,10 @@ def findCenter(result):
 def detect(image):
     #Get weights
     model = YOLO(WEIGHT)
+    #Get image shape
+    _, width, _ = image.shape
     #Detect blocks
-    results = model.predict(source=image, imgsz=IMGSZ)
+    results = model.predict(source=image, imgsz=width)
 
     list = []
     #If results are not empty append the center of the square to the list
@@ -86,6 +94,7 @@ def detect(image):
         print("No blocks detected")
 
     # print("List:\n", list)
+
     return list
 
 def buildMsg(block):
@@ -93,14 +102,14 @@ def buildMsg(block):
     # print("Block:\n", block)
 
     msg = BlockInfo()
-    msg.blockId = Int16(0) #Int16(block['id'])
+    msg.blockId = Int16(block['id'])
     msg.blockClass = Byte(block['class'])
     msg.blockPosition = Point(block['x'], block['y'], block['z'])
 
     return msg
 
 def receivePointcloud(msg, list):
-    points_list = []
+    points_list = [] #list of points in the camera frame
     listCoord = {
         'id': list['id'],
         'class': list['class'],
@@ -109,10 +118,11 @@ def receivePointcloud(msg, list):
         'z': 0
     }
 
-    #If the point didn't change, don't do anything
-    # if not (abs(x - prevX) < 10 and abs(y - prevY) < 10): # need to check if the point didn't changed
+    #Add the cropped pixels to match the pointcloud
+    x = list['x'] + CROP_WIDTH
+    y = list['y'] + CROP_HEIGHT
 
-    for data in point_cloud2.read_points(msg, field_names=['x','y','z'], skip_nans=False, uvs=[(list['x'], list['y'])]):
+    for data in point_cloud2.read_points(msg, field_names=['x','y','z'], skip_nans=False, uvs=[(x, y)]):
         points_list.append([data[0], data[1], data[2]]) #coordinates in the camera frame
 
     #Black magic
@@ -134,11 +144,6 @@ def receivePointcloud(msg, list):
         listCoord['z'] = pointW[2]
     else:
         print("Nan detected")
-
-    # else:
-    #     print("Point not changed")
-
-    print("Listcoord:\n", listCoord)
 
     #Check if the point is on the table
     if listCoord['z'] >= MIN_Z and listCoord['z'] <= MAX_Z and listCoord['x'] <= MAX_X:
@@ -162,22 +167,33 @@ def callback(img, pointCloud):
 
     global detectionRequest
 
-    print("Waiting for detection request")
+    # print("Waiting for detection request")
 
     #Wait for planner detection request
     if detectionRequest:
 
-        print("Detection request received")
+        print("Starting detection")
 
         #Convert image to cv2
         bridge = CvBridge()
         image = bridge.imgmsg_to_cv2(img, desired_encoding='passthrough')
 
-        #need to crop the image to get only the table
-        # cropImage()
+        #Cropping the image
+        height, width, _ = image.shape
+        croppedImage = image[CROP_HEIGHT:height, CROP_WIDTH:width]
+        croppedImage = np.ascontiguousarray(croppedImage)
+        #Display cropped image
+        # cv2.imshow("cropped", image)
+        # cv2.waitKey(0)
 
         #Detect blocks with YOLO
-        list = detect(image)
+        list = detect(croppedImage)
+
+        # print("List:\n", list)
+        # for i in range(len(list)):
+        #     image = cv2.circle(image, (list[i]['x'] + CROP_WIDTH, list[i]['y'] + CROP_HEIGHT), 5, (0, 0, 255), -1)
+        # cv2.imshow("image", image)
+        # cv2.waitKey(0)
 
         #Get coordinates from x,y pixels
         listCoord = []
@@ -186,8 +202,8 @@ def callback(img, pointCloud):
             if block != None: #check z limits
                 listCoord.append(block)
 
-        #print("len(listCoord): ", len(listCoord))
-        #print("listCoord:\n", listCoord)
+        # print("len(listCoord): ", len(listCoord))
+        # print("listCoord:\n", listCoord)
 
         #Keep only the nearest block to the camera
         if len(listCoord) > 1: #If more than one block detected
@@ -210,7 +226,8 @@ def callback(img, pointCloud):
         # print("Message:\n", msg)
         
         #Disable the callback
-        detectionRequest = False
+        if not DEBUG:
+            detectionRequest = False
 
         #Publish the message
         talker(msg)
