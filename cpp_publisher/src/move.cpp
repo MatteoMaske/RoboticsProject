@@ -704,7 +704,11 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
 
     //moving in z
     cout << "Moving in z" << endl;
-    moveUp(0.2);
+    //if the object is too close to the robot, move up of 0.1 to avoid sholder singularity
+    if(pos(1)>-0.1)
+        moveUp(0.1);
+    else
+        moveDown(0.2);
     if(DEBUG)sleep(2);
 
     //moving in x,y in a safer position
@@ -747,6 +751,12 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
         eePose.Pe(1) = -0.4;
         computeMovementDifferential(eePose.Pe, Vector3f::Zero(), 0.001);
     }
+
+    // Moving back in the left of the table
+    tmp = Vector3f(0.2, 0.8, 1.1);
+    tmp = transformationWorldToBase(tmp);
+    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
+    moveUp(0.2);
     
 
 }

@@ -21,7 +21,9 @@ using Eigen::Vector3f;
 void sendMoveOrder(Vector3f blockPos, int blockClass, int blockId);
 void visionCallback(const cpp_publisher::BlockInfo::ConstPtr& msg);
 void movementCallback(const cpp_publisher::MoveOperation::ConstPtr& msg);
+
 Vector3f getTargetZone(int blockClass);
+bool isInWorkspace(Vector3f blockPos);
 
 ros::Publisher movePublisher;
 ros::Publisher visionPublisher;
@@ -60,7 +62,8 @@ int main(int argc, char **argv)
             cin >> blockPos(0) >> blockPos(1) >> blockPos(2);
             int blockId = 1;
             int blockClass = 1;
-            sendMoveOrder(blockPos, blockClass, blockId);
+            if(isInWorkspace(blockPos))
+                sendMoveOrder(blockPos, blockClass, blockId);
         }
         
     }
@@ -146,6 +149,13 @@ Vector3f getTargetZone(int blockClass){
     return target;
 }
 
+bool isInWorkspace(Vector3f blockPos){
+    if(blockPos(0) > 0.05 && blockPos(0) < 0.5 && blockPos(1) > 0.05 && blockPos(1) < 0.75 && blockPos(2) > 0.86 && blockPos(2) < 0.92){
+        return true;
+    }
+    return false;
+}
+
 void visionCallback(const cpp_publisher::BlockInfo::ConstPtr& msg){
     
     cout << "Received vision callback" << endl;
@@ -156,7 +166,8 @@ void visionCallback(const cpp_publisher::BlockInfo::ConstPtr& msg){
     int blockId = msg->blockId.data;
     int blockClass = msg->blockClass.data;
 
-    sendMoveOrder(blockPos, blockClass, blockId);
+    if(isInWorkspace(blockPos))
+        sendMoveOrder(blockPos, blockClass, blockId);
 
 }
 

@@ -28,7 +28,7 @@ int main(int argc, char **argv)
   cout << "bella zi" << endl;
 
   image_transport::ImageTransport it(nh);
-  image_transport::Subscriber sub = it.subscribe("/ur5/zed2/right_raw/image_raw_color", 1, imageCallback);
+  image_transport::Subscriber sub = it.subscribe("/ur5/zed_node/left/image_rect_color", 10, imageCallback);
   ros::spin();
   cv::destroyWindow("view");
 }
