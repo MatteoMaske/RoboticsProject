@@ -13,7 +13,8 @@
 #include "kinematicsUr5.cpp"
 #include "frame2frame.cpp"
 
-#define DEBUG 0 //debug mode
+#define DEBUG 1 //debug mode
+#define MANUAL_CONTROL 0 //manual control mode
 
 #define LOOPRATE 1000 //rate of ros loop
 #define ROBOT_JOINTS 6 //number of joints of the robot
@@ -79,13 +80,13 @@ int main(int argc, char **argv){
         currentGripper << 0.0, 0.0, 0.0;
     }else currentGripper.resize(1,2);
 
-    if(!DEBUG){
+    if(!MANUAL_CONTROL){
         while(ros::ok()){
             ros::spinOnce();
         }
     }
 
-    if(DEBUG){
+    if(MANUAL_CONTROL){
         int input;
         while(1){
 
@@ -652,6 +653,8 @@ void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& msg){
 
     cout << "Received coordinates" << endl;
 
+    cout << "Moving block " << msg->blockId.data << endl;
+
     Vector3f pos,target;
     pos << msg->from.x, msg->from.y, msg->from.z;
     target << msg->to.x, msg->to.y, msg->to.z;
@@ -662,10 +665,10 @@ void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& msg){
     pos(2) = 0.92;
     target(2) = 0.92;
 
+    cout << "Moving object from " << pos.transpose() << " to " << target.transpose() << endl;
+
     pos = transformationWorldToBase(pos);
     target = transformationWorldToBase(target);
-
-    cout << "Moving block " << msg->blockId.data << endl;
 
     moveObject(pos, ori, target);
 
@@ -678,8 +681,6 @@ void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& msg){
 void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
 
     EEPose eePose;
-
-    cout << "Moving object from " << pos.transpose() << " to " << targetPos.transpose() << endl;
 
     // Kinematics
     cout << "Starting kinematics" << endl;
@@ -712,7 +713,7 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     tmp = eePose.Pe;
     //if the object is too close to the robot, move it away to avoid singularities
     if(tmp(1)>-0.4){
-        tmp(1) = -0.5;
+        tmp(1) = -0.4;
         computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
     }
 
@@ -743,7 +744,7 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     eePose = fwKin(currentJoint);
     Vector3f currentPos = eePose.Pe;
     if(currentPos(1)>-0.4){
-        eePose.Pe(1) = -0.5;
+        eePose.Pe(1) = -0.4;
         computeMovementDifferential(eePose.Pe, Vector3f::Zero(), 0.001);
     }
     
