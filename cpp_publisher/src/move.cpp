@@ -689,7 +689,7 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     cout << "Moving in x,y" << endl;
     Vector3f tmp = pos;
     tmp(2) -= 0.2;
-    computeMovementDifferential(pos, ori, 0.001);
+    computeMovementDifferential(tmp, ori, 0.001);
 
     //moving in z
     cout << "Moving in z" << endl;
@@ -704,11 +704,7 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
 
     //moving in z
     cout << "Moving in z" << endl;
-    //if the object is too close to the robot, move up of 0.1 to avoid sholder singularity
-    if(pos(1)>-0.1)
-        moveUp(0.1);
-    else
-        moveDown(0.2);
+    moveUp(0.1);
     if(DEBUG)sleep(2);
 
     //moving in x,y in a safer position
