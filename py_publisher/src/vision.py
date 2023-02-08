@@ -4,19 +4,17 @@ from ultralytics import YOLO
 import cv2
 import numpy as np
 import rospy
-from std_msgs.msg import String
 from PIL import Image
 import sensor_msgs.msg
 from cv_bridge import CvBridge
 # from py_publisher.msg import BlockDetected #custom messages
 from py_publisher.msg import BlockInfo
-from std_msgs.msg import Byte, Int16, Bool
+from std_msgs.msg import Byte, Int16, Bool, String
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs import point_cloud2
 import math
 import message_filters
-import threading
 
 """
 TODO:
@@ -43,13 +41,13 @@ WEIGHT = '/home/stefano/ros_ws/src/visionData/best.pt'
 IMGSZ = 1280
 
 #Z limits of the table
-MIN_Z = 0.85
-MAX_Z = 0.90
+MIN_Z = 0.8
+MAX_Z = 0.95
+#X limits of the table
+MAX_X = 0.5
 
 #Detection request sent by planner to enable the vision to publish
 detectionRequest = False
-#Mutex to access the Detection request variable
-semaphore = threading.Semaphore(1)
 
 def findCenter(result):
 
@@ -92,7 +90,7 @@ def detect(image):
 
 def buildMsg(block):
 
-    print("Block:\n", block)
+    # print("Block:\n", block)
 
     msg = BlockInfo()
     msg.blockId = Int16(0) #Int16(block['id'])
@@ -140,8 +138,10 @@ def receivePointcloud(msg, list):
     # else:
     #     print("Point not changed")
 
+    print("Listcoord:\n", listCoord)
+
     #Check if the point is on the table
-    if listCoord['z'] >= MIN_Z or listCoord['z'] <= MAX_Z:
+    if listCoord['z'] >= MIN_Z and listCoord['z'] <= MAX_Z and listCoord['x'] <= MAX_X:
         return listCoord
     else:
         return None
@@ -186,29 +186,39 @@ def callback(img, pointCloud):
             if block != None: #check z limits
                 listCoord.append(block)
 
+        #print("len(listCoord): ", len(listCoord))
+        #print("listCoord:\n", listCoord)
+
         #Keep only the nearest block to the camera
-        if len(listCoord) > 1:
-            block = [min(listCoord, key=lambda x: x['x'])]
+        if len(listCoord) > 1: #If more than one block detected
+            block = min(listCoord, key=lambda x: x['x'])
+        elif len(listCoord) == 1: #If only one block detected
+            block = listCoord[0]
+        else:
+            print("No blocks detected")
+            block = { #If no blocks detected, send a message with 0 coordinates
+                'id': 0,
+                'class': 0,
+                'x': 0,
+                'y': 0,
+                'z': 0
+            }
+        #print("Block:\n", block)
 
         #Build the massage to publish it
         msg = buildMsg(block)
         # print("Message:\n", msg)
         
         #Disable the callback
-        #semaphore.acquire()
         detectionRequest = False
-        #semaphore.release()
 
         #Publish the message
         talker(msg)
 
 def listenerDetectionReq(msg): #Listen to planner detection request
-    print("Dio boia")
-    #Enable the callback
-    #semaphore.acquire()
+    print("Detection request received")
     global detectionRequest
     detectionRequest = True
-    #semaphore.release()
 
 if __name__ == '__main__':
 
