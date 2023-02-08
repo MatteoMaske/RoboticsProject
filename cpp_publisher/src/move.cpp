@@ -659,8 +659,8 @@ void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& msg){
     Vector3f ori = Vector3f::Zero();
 
     //Adding 0.01 to the z coordinate to avoid collision with the table
-    pos(2) += 0.01;
-    target(2) += 0.01;
+    pos(2) = 0.92;
+    target(2) = 0.92;
 
     pos = transformationWorldToBase(pos);
     target = transformationWorldToBase(target);
@@ -692,12 +692,12 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
 
     //moving in z
     cout << "Moving in z" << endl;
-    moveDown(0.2);
+    computeMovementDifferential(pos, ori, 0.001);
 
     // Grasping
     cout << "Grasping object" << endl;
     Vector3f gripperJoints;
-    gripperJoints(0)=gripperJoints(1)=gripperJoints(2)=2.7;
+    gripperJoints(0)=gripperJoints(1)=gripperJoints(2)=2.8;
     changeHardGripper(gripperJoints);
     sleep(1);
 

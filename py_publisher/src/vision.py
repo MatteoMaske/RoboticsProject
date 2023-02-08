@@ -92,8 +92,10 @@ def detect(image):
 
 def buildMsg(block):
 
+    print("Block:\n", block)
+
     msg = BlockInfo()
-    msg.blockId = Int16(block['id'])
+    msg.blockId = Int16(0) #Int16(block['id'])
     msg.blockClass = Byte(block['class'])
     msg.blockPosition = Point(block['x'], block['y'], block['z'])
 
@@ -148,6 +150,8 @@ def talker(msg):
     rospy.init_node('publisher',anonymous=True)
     pub = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10) #Publish to planner
     
+    rospy.sleep(1)
+
     if pub.get_num_connections() > 0:
         print("Publishing message:\n", msg)
         pub.publish(msg)
@@ -191,19 +195,20 @@ def callback(img, pointCloud):
         # print("Message:\n", msg)
         
         #Disable the callback
-        semaphore.acquire()
+        #semaphore.acquire()
         detectionRequest = False
-        semaphore.release()
+        #semaphore.release()
 
         #Publish the message
         talker(msg)
 
-def listenerDetectionReq(): #Listen to planner detection request
+def listenerDetectionReq(msg): #Listen to planner detection request
+    print("Dio boia")
     #Enable the callback
-    semaphore.acquire()
+    #semaphore.acquire()
     global detectionRequest
     detectionRequest = True
-    semaphore.release()
+    #semaphore.release()
 
 if __name__ == '__main__':
 
@@ -214,7 +219,7 @@ if __name__ == '__main__':
     ts = message_filters.TimeSynchronizer([imageSub, pointCloudSub], 1)
     ts.registerCallback(callback)
 
-    rospy.Subscriber(PLANNER_DETECTION_REQUEST_TOPIC, Bool, listenerDetectionReq) #Subscribe to planner detectionRequest
+    rospy.Subscriber(PLANNER_DETECTION_REQUEST_TOPIC, Bool, listenerDetectionReq, queue_size=10) #Subscribe to planner detectionRequest
 
     while not rospy.is_shutdown():
         rospy.sleep(SLEEP_RATE)

@@ -27,10 +27,6 @@ ros::Publisher movePublisher;
 ros::Publisher visionPublisher;
 vector<int> blockPerClass(BLOCK_CLASSES, 0);
 
-bool received_ack = true;
-std::mutex ack_mutex;
-std::condition_variable ack_condition;
-
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "planner");
@@ -44,10 +40,12 @@ int main(int argc, char **argv)
 
     ros::Subscriber moveSubscriber = n.subscribe("/move/movement_results", 100, movementCallback);
 
+    cout << "waiting for subscribers" << endl;
     while(ros::ok()){
         if(visionPublisher.getNumSubscribers() > 0){
             std_msgs::Bool msg;
             msg.data = true;
+            if(DEBUG)cout << "Publishing detection request" << endl;
             visionPublisher.publish(msg);
             break;
         }
@@ -83,7 +81,7 @@ void sendMoveOrder(Vector3f blockPos, int blockClass, int blockId){
             msg.to.y = target(1);
             msg.to.z = target(2);
 
-            movePublisher.publish(msg);
+            if(msg.from.x < 0.5)movePublisher.publish(msg);
             
             break;
         }
@@ -108,6 +106,25 @@ Vector3f getTargetZone(int blockClass){
         break;
     case 3:
         target << 0.9, 0.5+offset, 0.9;
+        break;
+    case 4:
+        break;
+    case 5:
+        break;
+    case 6:
+        target << 0.9, 0.5+offset, 0.9;
+        break;
+    case 7:
+        target << 0.9, 0.5+offset, 0.9;
+        break;
+    case 8:
+        target << 0.9, 0.5+offset, 0.9;
+        break;
+    case 9:
+        target << 0.9, 0.5+offset, 0.9;
+        break;
+    case 10:
+        target << 0.8, 0.5+offset, 0.9;
         break;
     }
 
