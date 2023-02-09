@@ -1,33 +1,30 @@
 #include <iostream>
-#include <condition_variable>
 #include <ros/ros.h>
 
-#include <std_msgs/Bool.h>
-#include <cpp_publisher/Coordinates.h>
-#include <cpp_publisher/BlockInfo.h>
-#include <cpp_publisher/BlockDetected.h>
-#include <cpp_publisher/MoveOperation.h>
+#include <std_msgs/Bool.h> // Message type for vision node for detection request
+#include <cpp_publisher/Coordinates.h> // Message type for move node with coordinates of the block, target zone and block id
+#include <cpp_publisher/BlockInfo.h> // Message type for vision node with block position, class and id
+#include <cpp_publisher/MoveOperation.h> // Message type for move node with move operation result
 
 #include <Eigen/Dense>
-
 #include <vector>
 
-#define DEBUG 1
-#define BLOCK_CLASSES 10
+#define DEBUG 1 // Set to 1 to test without vision
+#define BLOCK_CLASSES 10 // Number of different block classes
 
 using namespace std;
 using Eigen::Vector3f;
 
-void sendMoveOrder(Vector3f blockPos, int blockClass, int blockId);
-void visionCallback(const cpp_publisher::BlockInfo::ConstPtr& msg);
-void movementCallback(const cpp_publisher::MoveOperation::ConstPtr& msg);
+void sendMoveOrder(Vector3f blockPos, int blockClass, int blockId); // Send move order to move node
+void visionCallback(const cpp_publisher::BlockInfo::ConstPtr& msg); // Callback for vision node
+void movementCallback(const cpp_publisher::MoveOperation::ConstPtr& msg); // Callback for move node
 
-Vector3f getTargetZone(int blockClass);
-bool isInWorkspace(Vector3f blockPos);
+Vector3f getTargetZone(int blockClass); // Get the target zone for a block of a given class
+bool isInWorkspace(Vector3f blockPos); // Check if a block is in the workspace
 
-ros::Publisher movePublisher;
-ros::Publisher visionPublisher;
-vector<int> blockPerClass(BLOCK_CLASSES, 0);
+ros::Publisher movePublisher; // Publisher for move node
+ros::Publisher visionPublisher; // Publisher for vision node
+vector<int> blockPerClass(BLOCK_CLASSES, 0); // Number of blocks of each class
 
 int main(int argc, char **argv)
 {
@@ -72,7 +69,13 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
+/**
+ * @brief Sends the move order to the move node, with the block position, class and id
+ * 
+ * @param blockPos 
+ * @param blockClass 
+ * @param blockId 
+ */
 void sendMoveOrder(Vector3f blockPos, int blockClass, int blockId){
 
     cout << "Sending move order" << endl;
@@ -104,6 +107,12 @@ void sendMoveOrder(Vector3f blockPos, int blockClass, int blockId){
     }
 }
 
+/**
+ * @brief Get the target zone where to place a block of a given class
+ * 
+ * @param blockClass 
+ * @return Vector3f 
+ */
 Vector3f getTargetZone(int blockClass){
 
     Vector3f target;
@@ -149,13 +158,26 @@ Vector3f getTargetZone(int blockClass){
     return target;
 }
 
+/**
+ * @brief Given a block position, check if it is in the workspace (table)
+ * 
+ * @param blockPos 
+ * @return true 
+ * @return false 
+ */
 bool isInWorkspace(Vector3f blockPos){
+
     if(blockPos(0) > 0.05 && blockPos(0) < 0.5 && blockPos(1) > 0.05 && blockPos(1) < 0.75 && blockPos(2) > 0.86 && blockPos(2) < 0.92){
         return true;
     }
     return false;
 }
 
+/**
+ * @brief Callback for vision node which receives the block position, class and id
+ * 
+ * @param msg 
+ */
 void visionCallback(const cpp_publisher::BlockInfo::ConstPtr& msg){
     
     cout << "Received vision callback" << endl;
@@ -171,7 +193,13 @@ void visionCallback(const cpp_publisher::BlockInfo::ConstPtr& msg){
 
 }
 
+/**
+ * @brief Callback for move node which receives the result of the movement
+ * 
+ * @param msg 
+ */
 void movementCallback(const cpp_publisher::MoveOperation::ConstPtr& msg){
+
     cout << "Received movement callback" << endl;
 
     cout << "Movement result: " << msg->result.data << endl;
