@@ -12,7 +12,7 @@
 
 #include <vector>
 
-#define DEBUG 0
+#define DEBUG 1
 #define BLOCK_CLASSES 10
 
 using namespace std;

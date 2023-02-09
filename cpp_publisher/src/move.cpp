@@ -15,6 +15,7 @@
 
 #define DEBUG 1 //debug mode
 #define MANUAL_CONTROL 0 //manual control mode
+#define REAL_ROBOT 0 //real robot mode
 
 #define LOOPRATE 1000 //rate of ros loop
 #define ROBOT_JOINTS 6 //number of joints of the robot
@@ -293,9 +294,8 @@ void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrienta
     eePose = fwKin(currentJoint);
 
     /*calc x0 and phie0*/
-    Vector3f x0,phie0;
+    Vector3f x0;
     x0 = eePose.Pe;
-    phie0 = eePose.Re.eulerAngles(2,1,0);
 
     /*Matrix to coorect the trajectory which otherwise is badly approximated*/
     MatrixXf kp(3,3);
@@ -329,10 +329,11 @@ void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrienta
         qk1 = qk + dotqk.transpose()*dt; 
         qk = qk1;
        
-        publishJoint(qk1);        
+        publishJoint(qk1);      // dotq->velocità dei giunti per raggiungere xArg dotq = v / dt * dt
     }
     currentJoint = qk1;
 }
+
 
 /**
  * @brief 
@@ -367,10 +368,12 @@ MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, Ma
         errorVector = 0.1*errorVector.normalized();
     }
 
-    ve << (vd+kp*(xd-xe)),
-    (kphi*errorVector);
+    ve << (vd+kp*(xd-xe)), //kp correction factor ee pos
+    (kphi*errorVector); //kphi corretion factor ee rot
     
     dotQ = (J+MatrixXf::Identity(6,6)*k).inverse()*ve;
+
+    //[ve,omega]=J dotq -> J^-1 * [ve(1,3), omega(1,3)]
 
     /*limit the velocity of the joints*/
     for(int i = 0; i < 6; i++){
@@ -401,19 +404,25 @@ MatrixXf computeOrientationError(MatrixXf wRe, MatrixXf wRd){
 
     //compute the delta angle
     float cosDTheta = (relativeOrientation(0,0)+relativeOrientation(1,1)+relativeOrientation(2,2)-1)/2;
-    MatrixXf tmp(3,1);
-    tmp << relativeOrientation(2,1)-relativeOrientation(1,2),
-    relativeOrientation(0,2)-relativeOrientation(2,0),
-    relativeOrientation(1,0)-relativeOrientation(0,1);
+    MatrixXf tmp(3,2);
+    tmp << relativeOrientation(2,1),-relativeOrientation(1,2),
+    relativeOrientation(0,2),-relativeOrientation(2,0),
+    relativeOrientation(1,0),-relativeOrientation(0,1);
+
     float senDTheta = tmp.norm()/2;
 
     float dTheta = atan2(senDTheta,cosDTheta);
+
+    MatrixXf aux(3,1);
+    aux << relativeOrientation(2,1)-relativeOrientation(1,2),
+            relativeOrientation(0,2)-relativeOrientation(2,0),
+            relativeOrientation(1,0)-relativeOrientation(0,1);
 
     if(dTheta == 0){
         return MatrixXf::Zero(3,1);
     }else{
         MatrixXf axis(3,1);
-        axis = (1/(2*senDTheta))*tmp;
+        axis = (1/(2*senDTheta))*aux;
         return wRe * axis * dTheta;
     }
 }
@@ -426,7 +435,7 @@ MatrixXf computeOrientationError(MatrixXf wRe, MatrixXf wRd){
  */
 MatrixXf jacobian(MatrixXf Th){
     MatrixXf A(1,6);
-    MatrixXf D(1,6) ;
+    MatrixXf D(1,6);
     A << 0,-0.425,-0.3922,0,0,0;
     D << 0.1625,0,0,0.1333,0.0997,0.0996+0.14;
 
@@ -508,18 +517,18 @@ void publishJoint(MatrixXf publishPos){
     std_msgs::Float64MultiArray msg;
     ros::Rate loop_rate(LOOPRATE);
 
-    if(HARD_GRIPPER){
+    if(HARD_GRIPPER && !REAL_ROBOT){
         msg.data.resize(ROBOT_JOINTS+EE_HARD_JOINTS); //6 joint angles + 3 hard gripper angles
         msg.data.assign(ROBOT_JOINTS+EE_HARD_JOINTS,0); //empty the msg
         
-
         for (int i = 0; i < ROBOT_JOINTS; i++){
             msg.data[i] = publishPos(0, i);
         }
         for(int i=0; i<EE_HARD_JOINTS; i++){
             msg.data[i+ROBOT_JOINTS] = currentGripper(i);
         }
-    }else{
+
+    }else if(REAL_ROBOT && !HARD_GRIPPER){
         msg.data.resize(ROBOT_JOINTS); //6 joint angles
         msg.data.assign(ROBOT_JOINTS,0); //empty the msg
 
@@ -685,15 +694,17 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     // Kinematics
     cout << "Starting kinematics" << endl;
 
-    //Moving in x,y
-    cout << "Moving in x,y" << endl;
+    //Moving above the block
+    cout << "Moving above the block" << endl;
     Vector3f tmp = pos;
     tmp(2) -= 0.2;
     computeMovementDifferential(tmp, ori, 0.001);
+    if(DEBUG)sleep(2);
 
     //moving in z
     cout << "Moving in z" << endl;
     computeMovementDifferential(pos, ori, 0.001);
+    if(DEBUG)sleep(2);
 
     // Grasping
     cout << "Grasping object" << endl;
@@ -707,16 +718,22 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     moveUp(0.1);
     if(DEBUG)sleep(2);
 
-    //moving in x,y in a safer position
-    cout << "Moving in x,y" << endl;
+    //moving in the left check point to stay safe
+    cout << "Moving to the left check point" << endl;
     eePose = fwKin(currentJoint);
-    tmp = eePose.Pe;
-    //if the object is too close to the robot, move it away to avoid singularities
-    if(tmp(1)>-0.4){
-        tmp(1) = -0.4;
-        computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
-    }
+    tmp(0) = -0.4;
+    tmp(1) = -0.4;
+    tmp(2) = 0.5;
+    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
+    if(DEBUG)sleep(2);
 
+    //moving to the right check point to stay safe
+    cout << "Moving to the right check point" << endl;
+    tmp(0) = 0.4;
+    tmp(1) = -0.4;
+    tmp(2) = 0.5;
+    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
+    if(DEBUG)sleep(2);
 
     //moving in x,y
     tmp = targetPos;
@@ -747,12 +764,14 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
         eePose.Pe(1) = -0.4;
         computeMovementDifferential(eePose.Pe, Vector3f::Zero(), 0.001);
     }
+    if(DEBUG)sleep(2);
 
     // Moving back in the left of the table
     tmp = Vector3f(0.2, 0.8, 1.1);
     tmp = transformationWorldToBase(tmp);
     computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
     moveUp(0.2);
+    if(DEBUG)sleep(2);
     
 
 }
