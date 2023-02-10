@@ -35,7 +35,7 @@ CROP_HEIGHT = 400
 CROP_WIDTH = 650
 
 #Debug mode
-DEBUG = True
+DEBUG = False
 
 #Detection request sent by planner to enable the vision to publish
 if DEBUG:
@@ -263,12 +263,17 @@ def listenerDetectionReq(msg): #Listen to planner detection request
 
 if __name__ == '__main__':
 
-    imageSub = message_filters.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image) #Subscribe to zed image
-    pointCloudSub = message_filters.Subscriber(ZED_POINT_CLOUD_TOPIC, PointCloud2) #Subscribe to zed point cloud
-    ts = message_filters.TimeSynchronizer([imageSub, pointCloudSub], 1) #Synchronize the two topics
+    #Subscribe to zed image
+    imageSub = message_filters.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image)
+    #Subscribe to zed point cloud
+    pointCloudSub = message_filters.Subscriber(ZED_POINT_CLOUD_TOPIC, PointCloud2)
+    
+    #Synchronize the two topics
+    ts = message_filters.TimeSynchronizer([imageSub, pointCloudSub], 1)
     ts.registerCallback(callback)
 
-    rospy.Subscriber(PLANNER_DETECTION_REQUEST_TOPIC, Bool, listenerDetectionReq, queue_size=10) #Subscribe to planner detectionRequest
+    #Subscribe to planner detectionRequest
+    rospy.Subscriber(PLANNER_DETECTION_REQUEST_TOPIC, Bool, listenerDetectionReq, queue_size=10)
 
     print("Waiting for detection request")
 
