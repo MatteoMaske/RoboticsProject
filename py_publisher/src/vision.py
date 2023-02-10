@@ -14,12 +14,14 @@ from sensor_msgs import point_cloud2
 import math
 import message_filters
 
+#Topics
 ZED_LEFT_TOPIC = "/ur5/zed_node/left/image_rect_color"
 ZED_POINT_CLOUD_TOPIC = "/ur5/zed_node/point_cloud/cloud_registered"
 PLANNER_DETECTION_REQUEST_TOPIC = "/planner/detection_request"
 
 SLEEP_RATE = 10
 
+#Path to the weights used for YOLO
 WEIGHT = '/home/stefano/ros_ws/src/visionData/best.pt'
 
 #Z limits of the blocks on the table
@@ -45,47 +47,27 @@ else:
 rospy.init_node('publisher',anonymous=True)
 pub = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10)
 
-def findCenter(result):
+"""
+Function that publishes the message to the planner if it is subscribed
+@param msg: message to be published
+"""
+def talker(msg):
+    # rospy.init_node('publisher',anonymous=True)
+    # pub = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10) #Publish to planner
+    # rospy.sleep(1)
 
-    #Find the center of the square for zed api
-    x1 = int(result.boxes.xyxy[0][0])
-    y1 = int(result.boxes.xyxy[0][1])
-    x2 = int(result.boxes.xyxy[0][2])
-    y2 = int(result.boxes.xyxy[0][3])
-    x = int((x1 + x2) / 2)
-    y = int((y1 + y2) / 2)
+    global pub
 
-    blockClass = int(result.boxes.cls.tolist()[0])
-
-    info = {
-        'id': 0,
-        'class': blockClass,
-        'x': x,
-        'y': y
-    }
-
-    return info
-
-def detect(image):
-    #Get weights
-    model = YOLO(WEIGHT)
-    #Get image shape
-    _, width, _ = image.shape
-    #Detect blocks
-    results = model.predict(source=image, imgsz=width)
-
-    blockList = []
-    #If results are not empty append the center of the square to the list
-    if not (len(results[0]) == 0):
-        for i in range(len(results[0])):
-            blockList.append(findCenter(results[0][i]))
+    if pub.get_num_connections() > 0:
+        print("Publishing message:\n", msg)
+        pub.publish(msg)
     else:
-        print("No blocks detected")
+        print("No subscribers")
 
-    # print("blockList:\n", blockList)
-
-    return blockList
-
+"""
+Function that builds the custom message to be published
+@param block: dictionary with the block info
+"""
 def buildMsg(block):
 
     # print("Block:\n", block)
@@ -97,6 +79,12 @@ def buildMsg(block):
 
     return msg
 
+"""
+Function that given a pointcloud and a list of blocks and their corresponding pixel, returns the coordinates of the blocks in the world frame
+Checks also if the point is on the table
+param msg: pointcloud message
+param list: list of dictionary of blocks with their corresponding pixel
+"""
 def receivePointcloud(msg, list):
     points_list = [] #list of points in the camera frame
     listCoord = {
@@ -140,19 +128,61 @@ def receivePointcloud(msg, list):
     else:
         return None
 
-def talker(msg):
-    # rospy.init_node('publisher',anonymous=True)
-    # pub = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10) #Publish to planner
-    # rospy.sleep(1)
+"""
+Function that given a detection result returns the center of the bounding box drawn by YOLO and the class of the block
+@param result: detection result from YOLO
+"""
+def findCenter(result):
 
-    global pub
+    #Find the center of the square for zed api
+    x1 = int(result.boxes.xyxy[0][0])
+    y1 = int(result.boxes.xyxy[0][1])
+    x2 = int(result.boxes.xyxy[0][2])
+    y2 = int(result.boxes.xyxy[0][3])
+    x = int((x1 + x2) / 2)
+    y = int((y1 + y2) / 2)
 
-    if pub.get_num_connections() > 0:
-        print("Publishing message:\n", msg)
-        pub.publish(msg)
+    blockClass = int(result.boxes.cls.tolist()[0])
+
+    info = {
+        'id': 0,
+        'class': blockClass,
+        'x': x,
+        'y': y
+    }
+
+    return info
+
+"""
+Function that given an image calls YOLO to detect blocks than calls findCenter() and returns a list of blocks with their corresponding pixel
+@param image: image to be processed in cv2 format
+"""
+def detect(image):
+    #Get weights
+    model = YOLO(WEIGHT)
+    #Get image shape
+    _, width, _ = image.shape
+    #Detect blocks
+    results = model.predict(source=image, imgsz=width)
+
+    blockList = []
+    #If results are not empty append the center of the square to the list
+    if not (len(results[0]) == 0):
+        for i in range(len(results[0])):
+            blockList.append(findCenter(results[0][i]))
     else:
-        print("No subscribers")
+        print("No blocks detected")
 
+    # print("blockList:\n", blockList)
+
+    return blockList
+
+"""
+Callback of the image and the point cloud subscriber that converts the image in cv2 format, crops it and calls detect() than receivePointcloud()
+than buildMsg() and finally publishes the message to the planner
+@param img: image from the zed camera
+@param pointCloud: point_cloud from the zed camera
+"""
 def callback(img, pointCloud):
 
     global detectionRequest
@@ -222,6 +252,10 @@ def callback(img, pointCloud):
         #Publish the message
         talker(msg)
 
+"""
+Callback of the planner detection request subscriber that sets the detectionRequest variable to True to enable the callback()
+@param msg: detection request message
+"""
 def listenerDetectionReq(msg): #Listen to planner detection request
     print("Detection request received")
     global detectionRequest
@@ -229,11 +263,9 @@ def listenerDetectionReq(msg): #Listen to planner detection request
 
 if __name__ == '__main__':
 
-    # rospy.init_node('publisher',anonymous=True)
-
     imageSub = message_filters.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image) #Subscribe to zed image
     pointCloudSub = message_filters.Subscriber(ZED_POINT_CLOUD_TOPIC, PointCloud2) #Subscribe to zed point cloud
-    ts = message_filters.TimeSynchronizer([imageSub, pointCloudSub], 1)
+    ts = message_filters.TimeSynchronizer([imageSub, pointCloudSub], 1) #Synchronize the two topics
     ts.registerCallback(callback)
 
     rospy.Subscriber(PLANNER_DETECTION_REQUEST_TOPIC, Bool, listenerDetectionReq, queue_size=10) #Subscribe to planner detectionRequest
