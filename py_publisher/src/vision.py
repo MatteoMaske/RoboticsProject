@@ -4,57 +4,46 @@ from ultralytics import YOLO
 import cv2
 import numpy as np
 import rospy
-from PIL import Image
 import sensor_msgs.msg
 from cv_bridge import CvBridge
-# from py_publisher.msg import BlockDetected #custom messages
 from py_publisher.msg import BlockInfo
-from std_msgs.msg import Byte, Int16, Bool, String
+from std_msgs.msg import Byte, Int16, Bool
 from geometry_msgs.msg import Point
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs import point_cloud2
 import math
 import message_filters
 
-"""
-TODO:
-"""
-
-# result.boxes.xyxy   # box with xyxy format, (N, 4)
-# result.boxes.xywh   # box with xywh format, (N, 4)
-# result.boxes.xyxyn  # box with xyxy format but normalized, (N, 4)
-# result.boxes.xywhn  # box with xywh format but normalized, (N, 4)
-# result.boxes.conf   # confidence score, (N, 1)
-# result.boxes.cls    # cls, (N, 1)
-
 ZED_LEFT_TOPIC = "/ur5/zed_node/left/image_rect_color"
 ZED_POINT_CLOUD_TOPIC = "/ur5/zed_node/point_cloud/cloud_registered"
 PLANNER_DETECTION_REQUEST_TOPIC = "/planner/detection_request"
-# ZED_DEPTH_TOPIC = "/ur5/zed_node/depth/depth_registered"
 
 SLEEP_RATE = 10
 
 WEIGHT = '/home/stefano/ros_ws/src/visionData/best.pt'
-# IMAGE = '/home/stefano/ros_ws/src/visionData/1.jpg'
 
-#Z limits of the table
+#Z limits of the blocks on the table
 MIN_Z = 0.88
 MAX_Z = 0.92
 #X limits of the table
 MAX_X = 0.6
 
-#Pixel crop
+#Pixel to crop
 CROP_HEIGHT = 400
 CROP_WIDTH = 650
 
 #Debug mode
-DEBUG = False
+DEBUG = True
 
 #Detection request sent by planner to enable the vision to publish
 if DEBUG:
     detectionRequest = True
 else:
     detectionRequest = False
+
+#Init node and publisher to planner
+rospy.init_node('publisher',anonymous=True)
+pub = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10)
 
 def findCenter(result):
 
@@ -85,17 +74,17 @@ def detect(image):
     #Detect blocks
     results = model.predict(source=image, imgsz=width)
 
-    list = []
+    blockList = []
     #If results are not empty append the center of the square to the list
     if not (len(results[0]) == 0):
         for i in range(len(results[0])):
-            list.append(findCenter(results[0][i]))
+            blockList.append(findCenter(results[0][i]))
     else:
         print("No blocks detected")
 
-    # print("List:\n", list)
+    # print("blockList:\n", blockList)
 
-    return list
+    return blockList
 
 def buildMsg(block):
 
@@ -104,7 +93,7 @@ def buildMsg(block):
     msg = BlockInfo()
     msg.blockId = Int16(block['id'])
     msg.blockClass = Byte(block['class'])
-    msg.blockPosition = Point(block['x'], block['y'], block['z'])
+    msg.blockPosition = Point(block['x'] + 0.02, block['y'], block['z'])
 
     return msg
 
@@ -152,10 +141,11 @@ def receivePointcloud(msg, list):
         return None
 
 def talker(msg):
-    rospy.init_node('publisher',anonymous=True)
-    pub = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10) #Publish to planner
-    
-    rospy.sleep(1)
+    # rospy.init_node('publisher',anonymous=True)
+    # pub = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10) #Publish to planner
+    # rospy.sleep(1)
+
+    global pub
 
     if pub.get_num_connections() > 0:
         print("Publishing message:\n", msg)
@@ -187,7 +177,7 @@ def callback(img, pointCloud):
         # cv2.waitKey(0)
 
         #Detect blocks with YOLO
-        list = detect(croppedImage)
+        blockList = detect(croppedImage)
 
         # print("List:\n", list)
         # for i in range(len(list)):
@@ -196,20 +186,20 @@ def callback(img, pointCloud):
         # cv2.waitKey(0)
 
         #Get coordinates from x,y pixels
-        listCoord = []
-        for i in range(len(list)):
-            block = receivePointcloud(pointCloud, list[i])
+        blocklListCoord = []
+        for i in range(len(blockList)):
+            block = receivePointcloud(pointCloud, blockList[i])
             if block != None: #check z limits
-                listCoord.append(block)
+                blocklListCoord.append(block)
 
         # print("len(listCoord): ", len(listCoord))
         # print("listCoord:\n", listCoord)
 
         #Keep only the nearest block to the camera
-        if len(listCoord) > 1: #If more than one block detected
-            block = min(listCoord, key=lambda x: x['x'])
-        elif len(listCoord) == 1: #If only one block detected
-            block = listCoord[0]
+        if len(blocklListCoord) > 1: #If more than one block detected
+            block = min(blocklListCoord, key=lambda x: x['x'])
+        elif len(blocklListCoord) == 1: #If only one block detected
+            block = blocklListCoord[0]
         else:
             print("No blocks detected")
             block = { #If no blocks detected, send a message with 0 coordinates
@@ -239,7 +229,7 @@ def listenerDetectionReq(msg): #Listen to planner detection request
 
 if __name__ == '__main__':
 
-    rospy.init_node('publisher',anonymous=True)
+    # rospy.init_node('publisher',anonymous=True)
 
     imageSub = message_filters.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image) #Subscribe to zed image
     pointCloudSub = message_filters.Subscriber(ZED_POINT_CLOUD_TOPIC, PointCloud2) #Subscribe to zed point cloud
@@ -247,6 +237,8 @@ if __name__ == '__main__':
     ts.registerCallback(callback)
 
     rospy.Subscriber(PLANNER_DETECTION_REQUEST_TOPIC, Bool, listenerDetectionReq, queue_size=10) #Subscribe to planner detectionRequest
+
+    print("Waiting for detection request")
 
     while not rospy.is_shutdown():
         rospy.sleep(SLEEP_RATE)
