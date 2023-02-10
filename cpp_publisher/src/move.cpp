@@ -615,12 +615,12 @@ Vector3f mapToGripperJoints(float diameter){
 }
 
 /**
- * @brief linear interpolation of the position
+ * @brief The position to be reach at an instance t whilst moving from xe0 to xef (linear interpolation of the position)
  * 
- * @param t
- * @param xef
- * @param xe0
- * @return Vector3f
+ * @param t current time instance
+ * @param xef final position
+ * @param xe0 initial position
+ * @return Vector3f reprensenting the position
  */
 Vector3f xe(float t, Vector3f xef, Vector3f xe0){
     Vector3f x;
