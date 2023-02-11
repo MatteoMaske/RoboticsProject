@@ -617,7 +617,7 @@ Vector3f mapToGripperJoints(float diameter){
 /**
  * @brief The position to be reach at an instance t whilst moving from xe0 to xef (linear interpolation of the position)
  * 
- * @param t current time instance
+ * @param t time elapsed so far
  * @param xef final position
  * @param xe0 initial position
  * @return Vector3f reprensenting the position
