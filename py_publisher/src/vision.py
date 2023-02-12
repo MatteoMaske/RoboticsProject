@@ -120,7 +120,7 @@ def receivePointcloud(msg, list):
         listCoord['y'] = pointW[1]
         listCoord['z'] = pointW[2]
     else:
-        print("Nan detected")
+        print("Not a number")
 
     #Check if the point is on the table
     if listCoord['z'] >= MIN_Z and listCoord['z'] <= MAX_Z and listCoord['x'] <= MAX_X:
