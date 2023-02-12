@@ -9,7 +9,7 @@ Introduction to robotics project 2022/2023
 @AmirGheser
 
 
-@Description
+# Description
 	Project for the course of Introduction to Robotics, University of Trento 2022/2023
 
 	Overall, the task of the project is to develop the code for a robotic arm capable of moving Megablocks of different classes to precise locations despite their orientation. Each of the 10 block types must be recognized and classified properly even if it’s placed upside down or lying on its side. The final task requires blocks to be moved around and piled up to build a hardcoded building such as a castle, a tower or more.
