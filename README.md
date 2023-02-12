@@ -10,11 +10,11 @@ Introduction to robotics project 2022/2023
 
 
 # Description
-	Project for the course of Introduction to Robotics, University of Trento 2022/2023
+Project for the course of Introduction to Robotics, University of Trento 2022/2023
 
-	Overall, the task of the project is to develop the code for a robotic arm capable of moving Megablocks of different classes to precise locations despite their orientation. Each of the 10 block types must be recognized and classified properly even if it’s placed upside down or lying on its side. The final task requires blocks to be moved around and piled up to build a hardcoded building such as a castle, a tower or more.
+Overall, the task of the project is to develop the code for a robotic arm capable of moving Megablocks of different classes to precise locations despite their orientation. Each of the 10 block types must be recognized and classified properly even if it’s placed upside down or lying on its side. The final task requires blocks to be moved around and piled up to build a hardcoded building such as a castle, a tower or more.
 
-	This project relies on the locosim repository (https://github.com/mfocchi/locosim) that manages the simulation of the robot and the environment. It spawns the blocks and the environment and manages the gripper. The locosim repository is a submodule of this repository, so make sure you have it installed.
+This project relies on the locosim repository (https://github.com/mfocchi/locosim) that manages the simulation of the robot and the environment. It spawns the blocks and the environment and manages the gripper. The locosim repository is a submodule of this repository, so make sure you have it installed.
 
 # Installation
 ## Requirements
@@ -44,7 +44,7 @@ locosim: https://github.com/mfocchi/locosim
 git submodule update --init --recursive
 ```
 3. Install the requirements
-4. Build the workspace
+4. Build a ros workspace
 5. Source the workspace
 
 # Usage
@@ -55,7 +55,7 @@ nano ~/.bashrc
 ```
 2. Add the following line
 ```
-alias ur5='python3 -i ~/${your_catkin_ws}/src/locosim/ur5'
+alias ur5='python3 -i ~/${your_catkin_ws}/src/locosim/robot_control/lab_exercises/lab_palopoli/ur5_generic.py'
 ```
 3. Save and exit
 4. Source the .bashrc file
@@ -74,15 +74,15 @@ ur5
 ```
 2. Open another terminal and launch the move node
 ```
-roslaunch cpp_publisher move
+rosrun cpp_publisher move
 ```
 3. Open another terminal and launch the planner
 ```
-roslaunch cpp_publisher planner
+rosrun cpp_publisher planner
 ```
 4. Open another terminal and launch the vision node
 ```
-roslaunch py_publisher vision
+rosrun py_publisher vision
 ```
 The rviz and gazebo simulation should start and the robot should start moving
 
@@ -97,26 +97,26 @@ ur5
 ```
 2. Open another terminal and launch the move node
 ```
-roslaunch cpp_publisher move
+rosrun cpp_publisher move
 ```
 3. Open another terminal and launch the planner
 ```
-roslaunch cpp_publisher planner
+rosrun cpp_publisher planner
 ```
 4. Open another terminal and launch the vision node
 ```
-roslaunch py_publisher vision
+rosrun py_publisher vision
 ```
 
 # Documentation
 ## Move node
-The move node is responsible for moving the robot in the simulation, it's written in C++ and it's based on the ur5 script from locosim. The move node is launched by '''rosrun cpp_publisher move'''. The move node publishes the current position of the robot on the topic /ur5/position and it subscribes to the topic /ur5/goal to receive the goal position of the robot.
+The move node is responsible for moving the robot in the simulation, it's written in C++ and it's based on the ur5 script from locosim. The move node is launched by ```rosrun cpp_publisher move```. The move node publishes the current position of the robot on the topic /ur5/position and it subscribes to the topic /ur5/goal to receive the goal position of the robot.
 
 ## Planner node
-The planner node is responsible for planning the path of the robot, it's written in C++ and it's based on the ur5 script from locosim. The planner node is launched by '''rosrun cpp_publisher planner'''. The planner node subscribes to the topic /ur5/position to receive the current position of the robot and it publishes the goal position of the robot on the topic /ur5/goal.
+The planner node is responsible for planning the path of the robot, it's written in C++ and it's based on the ur5 script from locosim. The planner node is launched by ```rosrun cpp_publisher planner```. The planner node subscribes to the topic /ur5/position to receive the current position of the robot and it publishes the goal position of the robot on the topic /ur5/goal.
 
 ## Vision node
-The vision node is responsible for detecting the blocks in the simulation, it's written in Python. The vision node is launched by '''rosrun py_publisher vision'''. The vision node subscribes to the topic /ur5/zed_node/left/image_rect_color to receive the image from the camera and it publishes the position of the blocks on the topic vision/vision_detection.
+The vision node is responsible for detecting the blocks in the simulation, it's written in Python. The vision node is launched by ```rosrun py_publisher vision```. The vision node subscribes to the topic /ur5/zed_node/left/image_rect_color to receive the image from the camera and it publishes the position of the blocks on the topic vision/vision_detection.
 
 # Sources
 -[Report](https://docs.google.com/document/u/2/d/e/2PACX-1vQiZPfs2Z4FkhYv-KPZE-VaQdFag_Jqy1Be6Zwl1rrErOfBeSZTSVxRmRH1eSXyPTvBu4t7OcXht-1Q/pub)
