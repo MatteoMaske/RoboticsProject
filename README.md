@@ -1,19 +1,17 @@
 # RoboticsProject
 Introduction to robotics project 2022/2023
 
-// @Authors
+@Authors
 	@StefanoSacchet
 	@MatteoMascherin
 	@AmirGheser
-//
 
-// @Description
+@Description
 	Project for the course of Introduction to Robotics, University of Trento 2022/2023
 
 	Overall, the task of the project is to develop the code for a robotic arm capable of moving Megablocks of different classes to precise locations despite their orientation. Each of the 10 block types must be recognized and classified properly even if it’s placed upside down or lying on its side. The final task requires blocks to be moved around and piled up to build a hardcoded building such as a castle, a tower or more.
 
 	This project relies on the locosim repository (https://github.com/mfocchi/locosim) that manages the simulation of the robot and the environment. It spawns the blocks and the environment and manages the gripper. The locosim repository is a submodule of this repository, so make sure you have it installed.
-//
 
 # Installation
 ## Requirements
