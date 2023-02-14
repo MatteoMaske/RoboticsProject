@@ -125,6 +125,6 @@ Than the node publishes the position of the blocks to the planner on the topic v
 # Sources
 -[Report](https://docs.google.com/document/u/2/d/e/2PACX-1vQiZPfs2Z4FkhYv-KPZE-VaQdFag_Jqy1Be6Zwl1rrErOfBeSZTSVxRmRH1eSXyPTvBu4t7OcXht-1Q/pub)
 
--[YOLOv5](https://github.com/ultralytics/yolov5)
+-[YOLOv8](https://github.com/ultralytics/ultralytics)
 
 -[locosim](github.com/mfocchi/locosim)
