@@ -119,6 +119,7 @@ The planner node is responsible for planning the path of the robot, it's written
 The vision node is responsible for detecting the blocks in the simulation, it's written in Python. The vision node is launched by ```rosrun py_publisher vision```. The vision node subscribes to the topics: 
   * /ur5/zed_node/left/image_rect_color to receive the image from the camera.
   * /ur5/zed_node/point_cloud/cloud_registered to recieve the point cloud from the camera and to calculate the 3D position of the block.
+
 Than the node publishes the position of the blocks to the planner on the topic vision/vision_detection.
 
 # Sources
