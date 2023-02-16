@@ -112,16 +112,16 @@ class Render:
                 ## Generate render
                 self.render_blender(render_counter) # Take photo of current scene and ouput the render_counter.png file
                 # Display demo information - Photo information
-                print("--> Picture information:")
-                print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
-                print("     Rendering samples:", self.samples)
+                # print("--> Picture information:")
+                # print("     Resolution:", (self.xpix*self.percentage, self.ypix*self.percentage))
+                # print("     Rendering samples:", self.samples)
 
                 ## Output Labels
                 text_file_name = self.labels_filepath + '/' + str(render_counter) + '.txt' # Create label file name
                 text_file = open(text_file_name, 'w+') # Open .txt file of the label
                 # Get formatted coordinates of the bounding boxes of all the objects in the scene
                 # Display demo information - Label construction
-                print("---> Label Construction")
+                # print("---> Label Construction")
                 text_coordinates = self.get_all_coordinates()
                 splitted_coordinates = text_coordinates.split('\n')[:-1] # Delete last '\n' in coordinates
                 text_file.write('\n'.join(splitted_coordinates)) # Write the coordinates to the text file and output the render_counter.txt file
@@ -150,12 +150,12 @@ class Render:
         '''
         main_text_coordinates = '' # Initialize the variable where we'll store the coordinates
         for i, objct in enumerate(self.objects): # Loop through all of the objects
-            print("     On object:", objct)
+            # print("     On object:", objct)
             b_box = self.find_bounding_box(objct) # Get current object's coordinates
             if b_box: # If find_bounding_box() doesn't return None
-                print("         Initial coordinates:", b_box)
+                # print("         Initial coordinates:", b_box)
                 text_coordinates = self.format_coordinates(b_box, objct) # Reformat coordinates to YOLOv3 format
-                print("         YOLO-friendly coordinates:", text_coordinates)
+                # print("         YOLO-friendly coordinates:", text_coordinates)
                 main_text_coordinates = main_text_coordinates + text_coordinates # Update main_text_coordinates variables whith each
                                                                                  # line corresponding to each class in the frame of the current image
             else:
