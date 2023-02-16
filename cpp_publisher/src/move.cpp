@@ -14,8 +14,8 @@
 #include "frame2frame.cpp" // Functions for frame to frame transformations (world to EE)
 
 #define DEBUG 1 //debug to slow the movement process
-#define MANUAL_CONTROL 0 //manual control mode
-#define REAL_ROBOT 0 //real robot mode
+#define MANUAL_CONTROL 1 //manual control mode
+#define REAL_ROBOT 1 //real robot mode
 
 #define LOOPRATE 1000 //rate of publisher
 #define ROBOT_JOINTS 6 //number of joints of the robot
