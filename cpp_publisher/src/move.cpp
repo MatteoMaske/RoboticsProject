@@ -14,13 +14,15 @@
 #include "frame2frame.cpp" // Functions for frame to frame transformations (world to EE)
 
 #define DEBUG 1 //debug to slow the movement process
-#define MANUAL_CONTROL 0 //manual control mode
+#define MANUAL_CONTROL 1 //manual control mode
 #define REAL_ROBOT 0 //real robot mode
 
 #define LOOPRATE 1000 //rate of publisher
 #define ROBOT_JOINTS 6 //number of joints of the robot
 #define EE_SOFT_JOINTS 2 //number of joints of the end effector
 #define EE_HARD_JOINTS 3 //number of joints of the end effector
+
+#define MOVEMENT_TIME 5 //time of the movement
 
 #define HARD_GRIPPER 1
 
@@ -196,7 +198,7 @@ void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrienta
 
     qk = currentJoint; //initialize qk
 
-    for(float t=dt; t<=1; t+=dt){
+    for(float t=dt; t<=MOVEMENT_TIME; t+=dt){
 
         eePose1 = fwKin(qk);
         x = eePose1.Pe;
@@ -519,6 +521,7 @@ Vector3f mapToGripperJoints(float diameter){
  */
 Vector3f xe(float t, Vector3f xef, Vector3f xe0){
     Vector3f x;
+    t = t / MOVEMENT_TIME;
     x = t * xef + (1-t) * xe0;
     return x;
 }
