@@ -15,7 +15,7 @@
 
 #define DEBUG 1 //debug to slow the movement process
 #define MANUAL_CONTROL 1 //manual control mode
-#define REAL_ROBOT 0 //real robot mode
+#define REAL_ROBOT 1 //real robot mode
 
 #define LOOPRATE 1000 //rate of publisher
 #define ROBOT_JOINTS 6 //number of joints of the robot
@@ -512,12 +512,12 @@ Vector3f mapToGripperJoints(float diameter){
 }
 
 /**
- * @brief linear interpolation of the position, returns the position at time t
+ * @brief The position to be reach at an instance t whilst moving from xe0 to xef (linear interpolation of the position)
  * 
- * @param t
- * @param xef
- * @param xe0
- * @return Vector3f
+ * @param t time elapsed so far
+ * @param xef final position
+ * @param xe0 initial position
+ * @return Vector3f reprensenting the position
  */
 Vector3f xe(float t, Vector3f xef, Vector3f xe0){
     Vector3f x;

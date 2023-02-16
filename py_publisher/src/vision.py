@@ -22,7 +22,7 @@ PLANNER_DETECTION_REQUEST_TOPIC = "/planner/detection_request"
 SLEEP_RATE = 10
 
 #Path to the weights used for YOLO
-WEIGHT = '/home/stefano/ros_ws/src/visionData/best.pt'
+WEIGHT = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/best1.pt'
 
 #Z limits of the blocks on the table
 MIN_Z = 0.88
@@ -35,7 +35,7 @@ CROP_HEIGHT = 400
 CROP_WIDTH = 650
 
 #Debug mode
-DEBUG = False
+DEBUG = True
 
 #Detection request sent by planner to enable the vision to publish
 if DEBUG:
@@ -120,7 +120,7 @@ def receivePointcloud(msg, list):
         listCoord['y'] = pointW[1]
         listCoord['z'] = pointW[2]
     else:
-        print("Nan detected")
+        print("Not a number")
 
     #Check if the point is on the table
     if listCoord['z'] >= MIN_Z and listCoord['z'] <= MAX_Z and listCoord['x'] <= MAX_X:
@@ -203,8 +203,8 @@ def callback(img, pointCloud):
         croppedImage = image[CROP_HEIGHT:height, CROP_WIDTH:width]
         croppedImage = np.ascontiguousarray(croppedImage)
         #Display cropped image
-        # cv2.imshow("cropped", image)
-        # cv2.waitKey(0)
+        cv2.imshow("cropped", image)
+        cv2.waitKey(0)
 
         #Detect blocks with YOLO
         blockList = detect(croppedImage)
