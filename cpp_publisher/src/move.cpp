@@ -9,6 +9,7 @@
 #include <sensor_msgs/JointState.h> // Message type for joint states
 #include <cpp_publisher/Coordinates.h> // Message type for move node with coordinates of the block, target zone and block id
 #include <cpp_publisher/MoveOperation.h> // Message type for move node with the result of the movement
+#include <ros_impedance_controller/generic_float.h>
 
 #include "kinematicsUr5.cpp" // Kinematics of the UR5, used for inverse and forward kinematics
 #include "frame2frame.cpp" // Functions for frame to frame transformations (world to EE)
@@ -33,6 +34,7 @@ using Eigen::Vector3f;
 //=======GLOBAL VARIABLES=======
 ros::Publisher pub_des_jstate; //publish desired joint state
 ros::Publisher pub_move_operation; //publish move operation
+ros::ServiceClient gripperClient;
 MatrixXf currentJoint(1,6); //current joint angles
 MatrixXf currentGripper; //current gripper joint angles
 
@@ -48,7 +50,7 @@ void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& coordinateMe
 void publishJoint(MatrixXf publishPos); //publish the joint angles
 void publishMoveOperation(int blockId, bool success); //publish the ack to planner
 void changeSoftGripper(float firstVal, float secondVal); //change the soft gripper
-void changeHardGripper(Vector3f ee_joints); //change the hard gripper
+void changeHardGripper(float diameter); //change the hard gripper
 Vector3f mapToGripperJoints(float diameter); //map the diameter to the gripper joints
 
 void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos); //move the object
@@ -61,11 +63,14 @@ int main(int argc, char **argv){
     //ROS initialization
     ros::init(argc, argv, "move");
     ros::NodeHandle node;
+
     pub_des_jstate = node.advertise<std_msgs::Float64MultiArray>("/ur5/joint_group_pos_controller/command", 1); //publisher for desired joint state
 
     pub_move_operation = node.advertise<cpp_publisher::MoveOperation>("/move/movement_results", 1); //publisher for desired joint state
 
     ros::Subscriber coordinateSubscriber = node.subscribe("/planner/position", 1, coordinateCallback); //subscriber for block position
+
+    gripperClient = node.serviceClient<ros_impedance_controller::generic_float>("move_gripper");
     
 
     MatrixXf homingJoint(1,6);
@@ -142,8 +147,7 @@ int main(int argc, char **argv){
                     Vector3f ee_joints = Vector3f::Ones(3);
                     cout << "Insert the value of the gripper joints:" << endl;
                     cin >> diameter;
-                    ee_joints*=diameter;
-                    changeHardGripper(ee_joints);
+                    changeHardGripper(diameter);
                 }else{
                     cout << "Insert the value of the gripper joints:" << endl;
                     float value,value2;
@@ -410,7 +414,7 @@ void publishJoint(MatrixXf publishPos){
             msg.data[i+ROBOT_JOINTS] = currentGripper(i);
         }
 
-    }else if(REAL_ROBOT && !HARD_GRIPPER){
+    }else if(REAL_ROBOT && HARD_GRIPPER){
         msg.data.resize(ROBOT_JOINTS); //6 joint angles
         msg.data.assign(ROBOT_JOINTS,0); //empty the msg
 
@@ -477,24 +481,38 @@ void changeSoftGripper(float firstVal,float secondVal){
  * 
  * @param currentJoint 
  */
-void changeHardGripper(Vector3f ee_joints){
+void changeHardGripper(float diameter){
 
     ros::Rate loop_rate(LOOPRATE);
 
-    std_msgs::Float64MultiArray msg;
-    msg.data.resize(ROBOT_JOINTS+EE_HARD_JOINTS); //6 joint angles + 3 end effector joints
-    msg.data.assign(ROBOT_JOINTS+EE_HARD_JOINTS,0); //empty the msg
+    if(!REAL_ROBOT){
 
-    for(int i = 0; i < ROBOT_JOINTS; i++)
-        msg.data[i] = currentJoint(0,i);
+        Vector3f ee_joints = mapToGripperJoints(diameter);
 
-    msg.data[ROBOT_JOINTS+0] = ee_joints(0);
-    msg.data[ROBOT_JOINTS+1] = ee_joints(1);
-    msg.data[ROBOT_JOINTS+2] = ee_joints(2);
+        std_msgs::Float64MultiArray msg;
+        msg.data.resize(ROBOT_JOINTS+EE_HARD_JOINTS); //6 joint angles + 3 end effector joints
+        msg.data.assign(ROBOT_JOINTS+EE_HARD_JOINTS,0); //empty the msg
 
-    currentGripper = ee_joints;
+        for(int i = 0; i < ROBOT_JOINTS; i++)
+            msg.data[i] = currentJoint(0,i);
 
-    pub_des_jstate.publish(msg); //to do -> change publisher with new topic
+        msg.data[ROBOT_JOINTS+0] = ee_joints(0);
+        msg.data[ROBOT_JOINTS+1] = ee_joints(1);
+        msg.data[ROBOT_JOINTS+2] = ee_joints(2);
+
+        currentGripper = ee_joints;
+
+        pub_des_jstate.publish(msg); //to do -> change publisher with new topic
+    }else{
+        ros_impedance_controller::generic_float srv;
+        srv.request.data = diameter;
+        if(gripperClient.call(srv)){
+            cout << "Gripper call correctly sent" << endl;
+        }else{
+            cout << "Gripper call error!" << endl;
+        }
+    }
+        
 
     loop_rate.sleep(); // sleep for the time remaining to let us hit our 1000Hz publish rate
 }
@@ -545,7 +563,7 @@ void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& coordinateMe
 
     //Adding 0.01 to the z coordinate to avoid collision with the table
     pos(2) = 0.92;
-    target(2) = 0.92;
+    target(2) = 0.94;
 
     cout << "Moving object from " << pos.transpose() << " to " << target.transpose() << endl;
 
@@ -588,8 +606,8 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     // Grasping
     cout << "Grasping object" << endl;
     Vector3f gripperJoints;
-    gripperJoints(0)=gripperJoints(1)=gripperJoints(2)=2.8;
-    changeHardGripper(gripperJoints);
+    float diameter=60;
+    changeHardGripper(diameter);
     sleep(1);
 
     //moving in z
@@ -628,7 +646,7 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
 
     // Releasing
     cout << "Releasing object" << endl;
-    changeHardGripper(Vector3f::Ones()*1.8);
+    changeHardGripper(100);
     sleep(1);
 
     // Moving up
