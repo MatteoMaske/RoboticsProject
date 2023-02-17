@@ -24,24 +24,34 @@ SLEEP_RATE = 10
 #Path to the weights used for YOLO
 WEIGHT = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/best1.pt'
 
-#Z limits of the blocks on the table
-MIN_Z = 0.88
-MAX_Z = 0.92
-#X limits of the table
-MAX_X = 0.6
-
-#Pixel to crop
-CROP_HEIGHT = 400
-CROP_WIDTH = 650
-
 #Debug mode
-DEBUG = True
+DEBUG = False
+#Set to true if is the real robot
+REAL_ROBOT = False
 
 #Detection request sent by planner to enable the vision to publish
 if DEBUG:
     detectionRequest = True
 else:
     detectionRequest = False
+
+#X limits of the blocks on the table
+MAX_X = 0.6
+#Z limits of the blocks on the table
+if REAL_ROBOT:
+    MIN_Z = 0
+    MAX_Z = 2
+else:
+    MIN_Z = 0.88
+    MAX_Z = 0.92
+
+#Pixel to crop
+if REAL_ROBOT:
+    CROP_HEIGHT = 100
+    CROP_WIDTH = 200
+else:
+    CROP_HEIGHT = 400
+    CROP_WIDTH = 650
 
 #Init node and publisher to planner
 rospy.init_node('publisher',anonymous=True)
@@ -102,13 +112,19 @@ def receivePointcloud(msg, list):
     for data in point_cloud2.read_points(msg, field_names=['x','y','z'], skip_nans=False, uvs=[(x, y)]):
         points_list.append([data[0], data[1], data[2]]) #coordinates in the camera frame
 
-    #Black magic
+    #Transform from camera frame to world frame
     base_offset = [0.5,0.35,1.75]
-    x_c = [-0.9,0.24,-0.35]
 
-    rotation = np.array([[0., -0.49948, 0.86632],
-                        [-1., 0., 0.],
-                        [-0., -0.86632, -0.49948]])
+    if REAL_ROBOT:
+        x_c = [-0.9, 0.18, 0.49948]
+        rotation = np.array([[0.86632, 0., 0.49948],
+                             [0., 1., 0.],
+                             [-0.49948, 0., 0.86632]])
+    else:
+        x_c = [-0.9,0.24,-0.35]
+        rotation = np.array([[0., -0.49948, 0.86632],
+                             [-1., 0., 0.],
+                             [-0., -0.86632, -0.49948]])
     
     #Coordinates in the world frame
     pointW = rotation.dot(points_list[0]) + x_c + base_offset
@@ -160,6 +176,12 @@ Function that given an image calls YOLO to detect blocks than calls findCenter()
 def detect(image):
     #Get weights
     model = YOLO(WEIGHT)
+
+    # if REAL_ROBOT:
+    #     #Convert image from 4 to 3 channels
+    #     b, g, r, a = cv2.split(image)
+    #     image = cv2.merge((b, g, r))
+
     #Get image shape
     _, width, _ = image.shape
     #Detect blocks
@@ -203,8 +225,8 @@ def callback(img, pointCloud):
         croppedImage = image[CROP_HEIGHT:height, CROP_WIDTH:width]
         croppedImage = np.ascontiguousarray(croppedImage)
         #Display cropped image
-        cv2.imshow("cropped", image)
-        cv2.waitKey(0)
+        # cv2.imshow("cropped", croppedImage)
+        # cv2.waitKey(0)
 
         #Detect blocks with YOLO
         blockList = detect(croppedImage)
@@ -222,7 +244,6 @@ def callback(img, pointCloud):
             if block != None: #check z limits
                 blocklListCoord.append(block)
 
-        # print("len(listCoord): ", len(listCoord))
         # print("listCoord:\n", listCoord)
 
         #Keep only the nearest block to the camera
@@ -243,7 +264,7 @@ def callback(img, pointCloud):
 
         #Build the massage to publish it
         msg = buildMsg(block)
-        # print("Message:\n", msg)
+        print("Message:\n", msg)
         
         #Disable the callback
         if not DEBUG:
