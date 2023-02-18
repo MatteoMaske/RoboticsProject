@@ -38,7 +38,7 @@ This project relies on the locosim repository (https://github.com/mfocchi/locosi
 
 ## Installation
 1. Clone the repository
-2. Clone the submodules, make sure you have locosim installed
+2. Clone the submodules, make sure you have installed
 locosim: https://github.com/mfocchi/locosim
 ```
 git submodule update --init --recursive
@@ -90,20 +90,26 @@ The rviz and gazebo simulation should start and the robot should start moving
 ### Preliminary steps and configuration
 
 ### Running the script
-1. Open another terminal and launch the ur5 script from locosim, we've used an alias to launch the script.
+1. Follow the steps in the locosim repository to install all drivers for the real robot
+2. Set all REAL_ROBOT flags for very node to True
+3. Open a terminal and launch the alias created following the steps in the locosim repository
+```
+robot_launch
+```
+4. Open another terminal and launch the ur5 script from locosim, we've used an alias to launch the script.
 Roscore isn't necessary as ur5 will launch it
 ```
 ur5
 ```
-2. Open another terminal and launch the move node
+5. Open another terminal and launch the move node
 ```
 rosrun cpp_publisher move
 ```
-3. Open another terminal and launch the planner
+6. Open another terminal and launch the planner
 ```
 rosrun cpp_publisher planner
 ```
-4. Open another terminal and launch the vision node
+7. Open another terminal and launch the vision node
 ```
 rosrun py_publisher vision
 ```

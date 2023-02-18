@@ -27,7 +27,7 @@ WEIGHT = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/best1.pt'
 #Debug mode
 DEBUG = False
 #Set to true if is the real robot
-REAL_ROBOT = False
+REAL_ROBOT = True
 
 #Detection request sent by planner to enable the vision to publish
 if DEBUG:
@@ -118,7 +118,7 @@ def receivePointcloud(msg, list):
     base_offset = [0.5,0.35,1.75]
 
     if REAL_ROBOT:
-        x_c = [-0.9, 0.18, 0.49948]
+        x_c = [-0.9, 0.18, -0.35] #oldZ = 0.49948
         rotation = np.array([[0.86632, 0., 0.49948],
                              [0., 1., 0.],
                              [-0.49948, 0., 0.86632]])
