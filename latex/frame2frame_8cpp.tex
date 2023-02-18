@@ -1,0 +1,56 @@
+\hypertarget{frame2frame_8cpp}{}\doxysection{cpp\+\_\+publisher/src/frame2frame.cpp File Reference}
+\label{frame2frame_8cpp}\index{cpp\_publisher/src/frame2frame.cpp@{cpp\_publisher/src/frame2frame.cpp}}
+
+
+File that contains the function to transform a point from the world frame to the base frame.  
+
+
+{\ttfamily \#include $<$cmath$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$Eigen/\+Dense$>$}\newline
+{\ttfamily \#include $<$Eigen/\+Geometry$>$}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+Eigen\+::\+Vector3f \mbox{\hyperlink{frame2frame_8cpp_a1a64d2290a8d2eb2842e92cd09e004bd}{transformation\+World\+To\+Base}} (Eigen\+::\+Vector3f point\+In\+World\+Frame)
+\begin{DoxyCompactList}\small\item\em takes a position in the world frame and returns the position in the base frame \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+File that contains the function to transform a point from the world frame to the base frame. 
+
+\begin{DoxyAuthor}{Author}
+Amir Gheser 
+\end{DoxyAuthor}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2023-\/02-\/17
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{frame2frame_8cpp_a1a64d2290a8d2eb2842e92cd09e004bd}\label{frame2frame_8cpp_a1a64d2290a8d2eb2842e92cd09e004bd}} 
+\index{frame2frame.cpp@{frame2frame.cpp}!transformationWorldToBase@{transformationWorldToBase}}
+\index{transformationWorldToBase@{transformationWorldToBase}!frame2frame.cpp@{frame2frame.cpp}}
+\doxysubsubsection{\texorpdfstring{transformationWorldToBase()}{transformationWorldToBase()}}
+{\footnotesize\ttfamily Eigen\+::\+Vector3f transformation\+World\+To\+Base (\begin{DoxyParamCaption}\item[{Eigen\+::\+Vector3f}]{point\+In\+World\+Frame }\end{DoxyParamCaption})}
+
+
+
+takes a position in the world frame and returns the position in the base frame 
+
+
+\begin{DoxyParams}{Parameters}
+{\em point\+In\+World\+Frame} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Eigen\+::\+Vector3f 
+\end{DoxyReturn}

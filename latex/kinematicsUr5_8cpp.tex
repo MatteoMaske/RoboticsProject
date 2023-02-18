@@ -1,0 +1,157 @@
+\hypertarget{kinematicsUr5_8cpp}{}\doxysection{cpp\+\_\+publisher/src/kinematics\+Ur5.cpp File Reference}
+\label{kinematicsUr5_8cpp}\index{cpp\_publisher/src/kinematicsUr5.cpp@{cpp\_publisher/src/kinematicsUr5.cpp}}
+
+
+File containing the functions to calculate the forward and inverse kinematics of the UR5 robot.  
+
+
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$Eigen/\+Dense$>$}\newline
+{\ttfamily \#include $<$cmath$>$}\newline
+{\ttfamily \#include $<$iomanip$>$}\newline
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structEEPose}{EEPose}}
+\begin{DoxyCompactList}\small\item\em Struct to store the position and orientation of the end effector. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{structEEPose}{EEPose}} \mbox{\hyperlink{kinematicsUr5_8cpp_ab26a50632e6c83c14ad0bc841947c7b1}{fw\+Kin}} (Matrix\+Xf Th)
+\begin{DoxyCompactList}\small\item\em This function will calculate the forward kinematics of the robot and return the position of the end effector. \end{DoxyCompactList}\item 
+Matrix\+Xf \mbox{\hyperlink{kinematicsUr5_8cpp_a42aebd727e84a32424657936c9aa0cbd}{inv\+Kin}} (\mbox{\hyperlink{structEEPose}{EEPose}} ee\+Pose)
+\begin{DoxyCompactList}\small\item\em This function will calculate the inverse kinematics of the robot and return the 8 possible joint configurations. \end{DoxyCompactList}\item 
+Matrix\+Xf \mbox{\hyperlink{kinematicsUr5_8cpp_abcabfa213a9da49c9dbc631fda103ed2}{calc\+A10}} (float th0)
+\item 
+Matrix\+Xf \mbox{\hyperlink{kinematicsUr5_8cpp_a0ad2ce42af855f006dfdef5e4bbcb608}{calc\+A21}} (float th1)
+\item 
+Matrix\+Xf \mbox{\hyperlink{kinematicsUr5_8cpp_a38841399e01e605152a47e7b89c04697}{calc\+A32}} (float th2)
+\item 
+Matrix\+Xf \mbox{\hyperlink{kinematicsUr5_8cpp_a844534a03ed3edd11d892d937562e08e}{calc\+A43}} (float th3)
+\item 
+Matrix\+Xf \mbox{\hyperlink{kinematicsUr5_8cpp_a3aaf66f0cf6b86849bf3b49c61f89f7a}{calc\+A54}} (float th4)
+\item 
+Matrix\+Xf \mbox{\hyperlink{kinematicsUr5_8cpp_a70271a45912064122acbba6540bdfc7a}{calc\+A65}} (float th5)
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const float \mbox{\hyperlink{kinematicsUr5_8cpp_a4ed927f2bc99d2221219c848e2fc905a}{A}} \mbox{[}6\mbox{]} = \{0, -\/0.\+425, -\/0.\+3922, 0, 0, 0\}
+\begin{DoxyCompactList}\small\item\em Length of the common normal between the z-\/axes of consecutive joints following the Denavit-\/\+Hartenberg convention. \end{DoxyCompactList}\item 
+const float \mbox{\hyperlink{kinematicsUr5_8cpp_ac45d476d2cc558c2b19069e61ac53318}{D}} \mbox{[}6\mbox{]} = \{0.\+1625, 0, 0, 0.\+1333, 0.\+0997, 0.\+0996+0.\+14\}
+\begin{DoxyCompactList}\small\item\em Distance between the z-\/axes of consecutive joints following the Denavit-\/\+Hartenberg convention. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+File containing the functions to calculate the forward and inverse kinematics of the UR5 robot. 
+
+\begin{DoxyAuthor}{Author}
+Stefano Sacchet 
+\end{DoxyAuthor}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2023-\/02-\/17
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{kinematicsUr5_8cpp_abcabfa213a9da49c9dbc631fda103ed2}\label{kinematicsUr5_8cpp_abcabfa213a9da49c9dbc631fda103ed2}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!calcA10@{calcA10}}
+\index{calcA10@{calcA10}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{calcA10()}{calcA10()}}
+{\footnotesize\ttfamily Matrix\+Xf calc\+A10 (\begin{DoxyParamCaption}\item[{float}]{th0 }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{kinematicsUr5_8cpp_a0ad2ce42af855f006dfdef5e4bbcb608}\label{kinematicsUr5_8cpp_a0ad2ce42af855f006dfdef5e4bbcb608}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!calcA21@{calcA21}}
+\index{calcA21@{calcA21}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{calcA21()}{calcA21()}}
+{\footnotesize\ttfamily Matrix\+Xf calc\+A21 (\begin{DoxyParamCaption}\item[{float}]{th1 }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{kinematicsUr5_8cpp_a38841399e01e605152a47e7b89c04697}\label{kinematicsUr5_8cpp_a38841399e01e605152a47e7b89c04697}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!calcA32@{calcA32}}
+\index{calcA32@{calcA32}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{calcA32()}{calcA32()}}
+{\footnotesize\ttfamily Matrix\+Xf calc\+A32 (\begin{DoxyParamCaption}\item[{float}]{th2 }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{kinematicsUr5_8cpp_a844534a03ed3edd11d892d937562e08e}\label{kinematicsUr5_8cpp_a844534a03ed3edd11d892d937562e08e}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!calcA43@{calcA43}}
+\index{calcA43@{calcA43}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{calcA43()}{calcA43()}}
+{\footnotesize\ttfamily Matrix\+Xf calc\+A43 (\begin{DoxyParamCaption}\item[{float}]{th3 }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{kinematicsUr5_8cpp_a3aaf66f0cf6b86849bf3b49c61f89f7a}\label{kinematicsUr5_8cpp_a3aaf66f0cf6b86849bf3b49c61f89f7a}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!calcA54@{calcA54}}
+\index{calcA54@{calcA54}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{calcA54()}{calcA54()}}
+{\footnotesize\ttfamily Matrix\+Xf calc\+A54 (\begin{DoxyParamCaption}\item[{float}]{th4 }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{kinematicsUr5_8cpp_a70271a45912064122acbba6540bdfc7a}\label{kinematicsUr5_8cpp_a70271a45912064122acbba6540bdfc7a}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!calcA65@{calcA65}}
+\index{calcA65@{calcA65}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{calcA65()}{calcA65()}}
+{\footnotesize\ttfamily Matrix\+Xf calc\+A65 (\begin{DoxyParamCaption}\item[{float}]{th5 }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{kinematicsUr5_8cpp_ab26a50632e6c83c14ad0bc841947c7b1}\label{kinematicsUr5_8cpp_ab26a50632e6c83c14ad0bc841947c7b1}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!fwKin@{fwKin}}
+\index{fwKin@{fwKin}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{fwKin()}{fwKin()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structEEPose}{EEPose}} fw\+Kin (\begin{DoxyParamCaption}\item[{Matrix\+Xf}]{Th }\end{DoxyParamCaption})}
+
+
+
+This function will calculate the forward kinematics of the robot and return the position of the end effector. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em Th} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{structEEPose}{EEPose}} 
+\end{DoxyReturn}
+\mbox{\Hypertarget{kinematicsUr5_8cpp_a42aebd727e84a32424657936c9aa0cbd}\label{kinematicsUr5_8cpp_a42aebd727e84a32424657936c9aa0cbd}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!invKin@{invKin}}
+\index{invKin@{invKin}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{invKin()}{invKin()}}
+{\footnotesize\ttfamily Matrix\+Xf inv\+Kin (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structEEPose}{EEPose}}}]{ee\+Pose }\end{DoxyParamCaption})}
+
+
+
+This function will calculate the inverse kinematics of the robot and return the 8 possible joint configurations. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ee\+Pose} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Matrix\+Xf 
+\end{DoxyReturn}
+
+
+\doxysubsection{Variable Documentation}
+\mbox{\Hypertarget{kinematicsUr5_8cpp_a4ed927f2bc99d2221219c848e2fc905a}\label{kinematicsUr5_8cpp_a4ed927f2bc99d2221219c848e2fc905a}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!A@{A}}
+\index{A@{A}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{A}{A}}
+{\footnotesize\ttfamily const float A\mbox{[}6\mbox{]} = \{0, -\/0.\+425, -\/0.\+3922, 0, 0, 0\}}
+
+
+
+Length of the common normal between the z-\/axes of consecutive joints following the Denavit-\/\+Hartenberg convention. 
+
+\mbox{\Hypertarget{kinematicsUr5_8cpp_ac45d476d2cc558c2b19069e61ac53318}\label{kinematicsUr5_8cpp_ac45d476d2cc558c2b19069e61ac53318}} 
+\index{kinematicsUr5.cpp@{kinematicsUr5.cpp}!D@{D}}
+\index{D@{D}!kinematicsUr5.cpp@{kinematicsUr5.cpp}}
+\doxysubsubsection{\texorpdfstring{D}{D}}
+{\footnotesize\ttfamily const float D\mbox{[}6\mbox{]} = \{0.\+1625, 0, 0, 0.\+1333, 0.\+0997, 0.\+0996+0.\+14\}}
+
+
+
+Distance between the z-\/axes of consecutive joints following the Denavit-\/\+Hartenberg convention. 
+

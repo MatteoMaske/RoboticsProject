@@ -1,0 +1,215 @@
+\hypertarget{planner_8cpp}{}\doxysection{cpp\+\_\+publisher/src/planner.cpp File Reference}
+\label{planner_8cpp}\index{cpp\_publisher/src/planner.cpp@{cpp\_publisher/src/planner.cpp}}
+
+
+File containing the planner node that manage all the tasks of the project communicating with the vision and move nodes.  
+
+
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$ros/ros.\+h$>$}\newline
+{\ttfamily \#include $<$std\+\_\+msgs/\+Bool.\+h$>$}\newline
+{\ttfamily \#include $<$cpp\+\_\+publisher/\+Coordinates.\+h$>$}\newline
+{\ttfamily \#include $<$cpp\+\_\+publisher/\+Block\+Info.\+h$>$}\newline
+{\ttfamily \#include $<$cpp\+\_\+publisher/\+Move\+Operation.\+h$>$}\newline
+{\ttfamily \#include $<$Eigen/\+Dense$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{planner_8cpp_ad72dbcf6d0153db1b8d8a58001feed83}{DEBUG}}~1
+\begin{DoxyCompactList}\small\item\em Set to 1 to test without vision. \end{DoxyCompactList}\item 
+\#define \mbox{\hyperlink{planner_8cpp_abacaf307aa8ae179849cc21b90b1d031}{BLOCK\+\_\+\+CLASSES}}~10
+\begin{DoxyCompactList}\small\item\em Number of different block classes. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+vector$<$ int $>$ \mbox{\hyperlink{planner_8cpp_a93ab140e20d2c36255bac51afd37ee7b}{block\+Per\+Class}} (\mbox{\hyperlink{planner_8cpp_abacaf307aa8ae179849cc21b90b1d031}{BLOCK\+\_\+\+CLASSES}}, 0)
+\begin{DoxyCompactList}\small\item\em Vector containing the number of blocks of each class in the table to calculate the target zone offset. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{planner_8cpp_ae9477efc1df810f3981530785d4cde36}{send\+Move\+Order}} (Vector3f block\+Pos, int block\+Class, int block\+Id)
+\begin{DoxyCompactList}\small\item\em Sends the move order to the move node, with the block position, class and id. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{planner_8cpp_a77af2de384a42f6718b96e08e8e98ff4}{vision\+Callback}} (const cpp\+\_\+publisher\+::\+Block\+Info\+::\+Const\+Ptr \&msg)
+\begin{DoxyCompactList}\small\item\em Callback for vision node which receives the block position, class and id. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{planner_8cpp_a78c888aaaf1bc92c0f1a956e165383a1}{movement\+Callback}} (const cpp\+\_\+publisher\+::\+Move\+Operation\+::\+Const\+Ptr \&msg)
+\begin{DoxyCompactList}\small\item\em Callback for move node which receives the result of the movement. \end{DoxyCompactList}\item 
+Vector3f \mbox{\hyperlink{planner_8cpp_a9570764235713f2ab000b7fccaf0850f}{get\+Target\+Zone}} (int block\+Class)
+\begin{DoxyCompactList}\small\item\em Get the target zone where to place a block of a given class. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{planner_8cpp_ab813edc93fcdd939247173a19a1a6352}{is\+In\+Workspace}} (Vector3f block\+Pos)
+\begin{DoxyCompactList}\small\item\em Given a block position, check if it is in the workspace (table) \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{planner_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}{main}} (int argc, char $\ast$$\ast$argv)
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+ros\+::\+Publisher \mbox{\hyperlink{planner_8cpp_ad26ca170c3f6856dbf87f176e9244166}{move\+Publisher}}
+\begin{DoxyCompactList}\small\item\em Publisher for sending move orders. \end{DoxyCompactList}\item 
+ros\+::\+Publisher \mbox{\hyperlink{planner_8cpp_a74ed87a57629b3e7533e092e2c988c45}{vision\+Publisher}}
+\begin{DoxyCompactList}\small\item\em Publisher for sending detection requests. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+File containing the planner node that manage all the tasks of the project communicating with the vision and move nodes. 
+
+\begin{DoxyAuthor}{Author}
+Matteo Mascherin 
+\end{DoxyAuthor}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2023-\/02-\/17
+\end{DoxyDate}
+\begin{DoxyCopyright}{Copyright}
+Copyright (c) 2023 
+\end{DoxyCopyright}
+
+
+\doxysubsection{Macro Definition Documentation}
+\mbox{\Hypertarget{planner_8cpp_abacaf307aa8ae179849cc21b90b1d031}\label{planner_8cpp_abacaf307aa8ae179849cc21b90b1d031}} 
+\index{planner.cpp@{planner.cpp}!BLOCK\_CLASSES@{BLOCK\_CLASSES}}
+\index{BLOCK\_CLASSES@{BLOCK\_CLASSES}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{BLOCK\_CLASSES}{BLOCK\_CLASSES}}
+{\footnotesize\ttfamily \#define BLOCK\+\_\+\+CLASSES~10}
+
+
+
+Number of different block classes. 
+
+\mbox{\Hypertarget{planner_8cpp_ad72dbcf6d0153db1b8d8a58001feed83}\label{planner_8cpp_ad72dbcf6d0153db1b8d8a58001feed83}} 
+\index{planner.cpp@{planner.cpp}!DEBUG@{DEBUG}}
+\index{DEBUG@{DEBUG}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{DEBUG}{DEBUG}}
+{\footnotesize\ttfamily \#define DEBUG~1}
+
+
+
+Set to 1 to test without vision. 
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{planner_8cpp_a93ab140e20d2c36255bac51afd37ee7b}\label{planner_8cpp_a93ab140e20d2c36255bac51afd37ee7b}} 
+\index{planner.cpp@{planner.cpp}!blockPerClass@{blockPerClass}}
+\index{blockPerClass@{blockPerClass}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{blockPerClass()}{blockPerClass()}}
+{\footnotesize\ttfamily vector$<$ int $>$ block\+Per\+Class (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{planner_8cpp_abacaf307aa8ae179849cc21b90b1d031}{BLOCK\+\_\+\+CLASSES}}}]{,  }\item[{0}]{ }\end{DoxyParamCaption})}
+
+
+
+Vector containing the number of blocks of each class in the table to calculate the target zone offset. 
+
+\mbox{\Hypertarget{planner_8cpp_a9570764235713f2ab000b7fccaf0850f}\label{planner_8cpp_a9570764235713f2ab000b7fccaf0850f}} 
+\index{planner.cpp@{planner.cpp}!getTargetZone@{getTargetZone}}
+\index{getTargetZone@{getTargetZone}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{getTargetZone()}{getTargetZone()}}
+{\footnotesize\ttfamily Vector3f get\+Target\+Zone (\begin{DoxyParamCaption}\item[{int}]{block\+Class }\end{DoxyParamCaption})}
+
+
+
+Get the target zone where to place a block of a given class. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em block\+Class} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Vector3f 
+\end{DoxyReturn}
+\mbox{\Hypertarget{planner_8cpp_ab813edc93fcdd939247173a19a1a6352}\label{planner_8cpp_ab813edc93fcdd939247173a19a1a6352}} 
+\index{planner.cpp@{planner.cpp}!isInWorkspace@{isInWorkspace}}
+\index{isInWorkspace@{isInWorkspace}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{isInWorkspace()}{isInWorkspace()}}
+{\footnotesize\ttfamily bool is\+In\+Workspace (\begin{DoxyParamCaption}\item[{Vector3f}]{block\+Pos }\end{DoxyParamCaption})}
+
+
+
+Given a block position, check if it is in the workspace (table) 
+
+
+\begin{DoxyParams}{Parameters}
+{\em block\+Pos} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true 
+
+false 
+\end{DoxyReturn}
+\mbox{\Hypertarget{planner_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}\label{planner_8cpp_a3c04138a5bfe5d72780bb7e82a18e627}} 
+\index{planner.cpp@{planner.cpp}!main@{main}}
+\index{main@{main}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily int main (\begin{DoxyParamCaption}\item[{int}]{argc,  }\item[{char $\ast$$\ast$}]{argv }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{planner_8cpp_a78c888aaaf1bc92c0f1a956e165383a1}\label{planner_8cpp_a78c888aaaf1bc92c0f1a956e165383a1}} 
+\index{planner.cpp@{planner.cpp}!movementCallback@{movementCallback}}
+\index{movementCallback@{movementCallback}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{movementCallback()}{movementCallback()}}
+{\footnotesize\ttfamily void movement\+Callback (\begin{DoxyParamCaption}\item[{const cpp\+\_\+publisher\+::\+Move\+Operation\+::\+Const\+Ptr \&}]{msg }\end{DoxyParamCaption})}
+
+
+
+Callback for move node which receives the result of the movement. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em msg} & \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{planner_8cpp_ae9477efc1df810f3981530785d4cde36}\label{planner_8cpp_ae9477efc1df810f3981530785d4cde36}} 
+\index{planner.cpp@{planner.cpp}!sendMoveOrder@{sendMoveOrder}}
+\index{sendMoveOrder@{sendMoveOrder}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{sendMoveOrder()}{sendMoveOrder()}}
+{\footnotesize\ttfamily void send\+Move\+Order (\begin{DoxyParamCaption}\item[{Vector3f}]{block\+Pos,  }\item[{int}]{block\+Class,  }\item[{int}]{block\+Id }\end{DoxyParamCaption})}
+
+
+
+Sends the move order to the move node, with the block position, class and id. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em block\+Pos} & \\
+\hline
+{\em block\+Class} & \\
+\hline
+{\em block\+Id} & \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{planner_8cpp_a77af2de384a42f6718b96e08e8e98ff4}\label{planner_8cpp_a77af2de384a42f6718b96e08e8e98ff4}} 
+\index{planner.cpp@{planner.cpp}!visionCallback@{visionCallback}}
+\index{visionCallback@{visionCallback}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{visionCallback()}{visionCallback()}}
+{\footnotesize\ttfamily void vision\+Callback (\begin{DoxyParamCaption}\item[{const cpp\+\_\+publisher\+::\+Block\+Info\+::\+Const\+Ptr \&}]{msg }\end{DoxyParamCaption})}
+
+
+
+Callback for vision node which receives the block position, class and id. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em msg} & \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Variable Documentation}
+\mbox{\Hypertarget{planner_8cpp_ad26ca170c3f6856dbf87f176e9244166}\label{planner_8cpp_ad26ca170c3f6856dbf87f176e9244166}} 
+\index{planner.cpp@{planner.cpp}!movePublisher@{movePublisher}}
+\index{movePublisher@{movePublisher}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{movePublisher}{movePublisher}}
+{\footnotesize\ttfamily ros\+::\+Publisher move\+Publisher}
+
+
+
+Publisher for sending move orders. 
+
+\mbox{\Hypertarget{planner_8cpp_a74ed87a57629b3e7533e092e2c988c45}\label{planner_8cpp_a74ed87a57629b3e7533e092e2c988c45}} 
+\index{planner.cpp@{planner.cpp}!visionPublisher@{visionPublisher}}
+\index{visionPublisher@{visionPublisher}!planner.cpp@{planner.cpp}}
+\doxysubsubsection{\texorpdfstring{visionPublisher}{visionPublisher}}
+{\footnotesize\ttfamily ros\+::\+Publisher vision\+Publisher}
+
+
+
+Publisher for sending detection requests. 
+
