@@ -1,3 +1,14 @@
+/**
+ * @file move.cpp
+ * @author Matteo Mascherin
+ * @brief File containing the move node, which manage all the movement of the robot
+ * @version 1.0
+ * @date 2023-02-17
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <iostream>
 #include <Eigen/Dense>
 #include <cmath>
@@ -14,17 +25,27 @@
 #include "kinematicsUr5.cpp" // Kinematics of the UR5, used for inverse and forward kinematics
 #include "frame2frame.cpp" // Functions for frame to frame transformations (world to EE)
 
-#define DEBUG 1 //debug to slow the movement process
-#define MANUAL_CONTROL 1 //manual control mode
-#define REAL_ROBOT 1 //real robot mode
+///Flag to slow down the movement process
+#define DEBUG 0
+///Flag to enable the manual control of the robot
+#define MANUAL_CONTROL 0
+///Flag to enable the real robot mode
+#define REAL_ROBOT 0
 
-#define LOOPRATE 1000 //rate of publisher
-#define ROBOT_JOINTS 6 //number of joints of the robot
-#define EE_SOFT_JOINTS 2 //number of joints of the end effector
-#define EE_HARD_JOINTS 3 //number of joints of the end effector
+///Loop rate of publisher
+#define LOOPRATE 1000
+///Velocity of the movement while not approaching the block [m/s]
+#define MOVEMENT_VELOCITY 0.3
+///Velocity while approaching the block [m/s]
+#define APPROACH_VELOCITY 0.1
+///Number of joints of the robot
+#define ROBOT_JOINTS 6
+///Number of joints of the soft gripper
+#define EE_SOFT_JOINTS 2
+///Number of joints of the hard gripper
+#define EE_HARD_JOINTS 3 
 
-#define MOVEMENT_TIME 5 //time of the movement
-
+///Flag to enable the hard gripper
 #define HARD_GRIPPER 1
 
 using namespace std;
@@ -32,16 +53,21 @@ using Eigen::MatrixXf;
 using Eigen::Vector3f;
 
 //=======GLOBAL VARIABLES=======
-ros::Publisher pub_des_jstate; //publish desired joint state
-ros::Publisher pub_move_operation; //publish move operation
+///Publisher for desired joint state
+ros::Publisher pub_des_jstate;
+///Publisher for the result of the movement to be sent to the planner
+ros::Publisher pub_move_operation;
+///Client for the service call to move the gripper
 ros::ServiceClient gripperClient;
-MatrixXf currentJoint(1,6); //current joint angles
-MatrixXf currentGripper; //current gripper joint angles
+///Current joint state of the robot
+MatrixXf currentJoint(1,6);
+///Current joint state of the gripper
+MatrixXf currentGripper;
 
 //=======FUNCTION DECLARATION=======
-Vector3f xe(float t, Vector3f xef, Vector3f xe0); //linear interpolation of the position
+Vector3f xe(float t, Vector3f xef, Vector3f xe0, const float& movementTime); //linear interpolation of the position
 MatrixXf toRotationMatrix(Vector3f euler); //convert euler angles to rotation matrix
-void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrientation,float dt);//compute the movement
+void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrientation,float dt,const bool& approach);//compute the movement
 MatrixXf invDiffKinematiControlComplete(MatrixXf q, MatrixXf xe, MatrixXf xd, MatrixXf vd, MatrixXf re, MatrixXf phif, MatrixXf kp, MatrixXf kphi);//compute qdot
 MatrixXf computeOrientationError(MatrixXf wRe, MatrixXf wRd);//compute orientation error
 MatrixXf jacobian(MatrixXf Th);//compute jacobian
@@ -57,6 +83,8 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos); //move the obje
 void moveDown(float distance); //move down of distance
 void moveUp(float distance); //move up of distance
 
+void generateManualControlMenu(); //generate the manual control menu
+
 //=======MAIN FUNCTION=======
 int main(int argc, char **argv){
 
@@ -71,10 +99,6 @@ int main(int argc, char **argv){
     ros::Subscriber coordinateSubscriber = node.subscribe("/planner/position", 1, coordinateCallback); //subscriber for block position
 
     gripperClient = node.serviceClient<ros_impedance_controller::generic_float>("move_gripper");
-    
-
-    MatrixXf homingJoint(1,6);
-    homingJoint << -0.322, -0.7805, -2.5675, -1.634, -1.571, -1.0017; //homing procedure joint angles
 
     MatrixXf customHomingJoint(1,6);
     customHomingJoint <<   -2.7907,-0.78, -2.56,-1.63, -1.57, 3.49; //custom homing procedure joint angles
@@ -95,86 +119,98 @@ int main(int argc, char **argv){
 
     //manual control of the robot with a menu
     if(MANUAL_CONTROL){
-        int input;
-        while(1){
-
-            do{
-                cout << "[1] for moving to a point with differential kinematics" << endl;
-                cout << "[2] for coming back in homing procedure" << endl;
-                cout << "[3] for getting current ee pos" << endl;
-                cout << "[4] for getting current joint state" << endl;
-                cout << "[5] for moving the gripper" << endl;
-                cout << "[6] for moving up" << endl;
-                cout << "[7] for moving down" << endl;
-                cout << "[0] to exit" << endl;
-                cin >> input;
-
-            }while(input < 0 || input > 7);
-
-            if(input == 1){
-
-                Vector3f pos, ori;
-                cout << "Insert the posistion coordinate: " << endl;
-                cin >> pos(0) >> pos(1) >> pos(2);
-                cout <<"Insert the orientation coordinate: " << endl;
-                cin >> ori(0) >> ori(1) >> ori(2);
-
-                cout <<"Choose the reference frame [0] world [1] end effector: " << endl;
-                int refFrame;
-                cin >> refFrame;
-
-                if(refFrame == 0) {
-                    pos(2) += 0.01;
-                    pos = transformationWorldToBase(pos);
-                }
-
-                computeMovementDifferential(pos, ori ,0.001); //compute the movement to the first brick in tavolo_brick.world
-            }
-            else if(input == 2){
-                publishJoint(customHomingJoint);
-                currentJoint = customHomingJoint;
-            }else if(input==3){
-                EEPose eePose;
-                eePose = fwKin(currentJoint);
-                cout << "Current ee position: " << endl;
-                cout << eePose.Pe.transpose() << endl;
-            }else if(input == 4){
-                cout << "Current joint state: " << endl;
-                cout << currentJoint << endl;
-            }else if(input == 5){
-                if(HARD_GRIPPER){
-                    float diameter;
-                    Vector3f ee_joints = Vector3f::Ones(3);
-                    cout << "Insert the value of the gripper joints:" << endl;
-                    cin >> diameter;
-                    changeHardGripper(diameter);
-                }else{
-                    cout << "Insert the value of the gripper joints:" << endl;
-                    float value,value2;
-                    cin >> value >> value2;
-                    changeSoftGripper(value,value2);
-                }
-            }else if(input == 6){
-                moveUp(0.1);
-            }else if(input == 7){
-                moveDown(0.1);
-            }else{
-                break;
-            }
-        }
+        generateManualControlMenu();
     }
 
     return 0;
 }
 
+//=======FUNCTION DEFINITION=======
+
 /**
- * @brief Compute the movement using the differential kinematics and relying on a straight line trajectory
+ * @brief Generate a human readable menu for manual control of the robot with differential commands
+ * 
+ */
+void generateManualControlMenu(){
+    int input;
+    while(1){
+
+        do{
+            cout << "[1] for moving to a point with differential kinematics" << endl;
+            cout << "[2] for getting current ee pos" << endl;
+            cout << "[3] for getting current joint state" << endl;
+            cout << "[4] for moving the gripper" << endl;
+            cout << "[5] for moving up" << endl;
+            cout << "[6] for moving down" << endl;
+            cout << "[0] to exit" << endl;
+            cin >> input;
+
+        }while(input < 0 || input > 6);
+
+        if(input == 1){
+
+            Vector3f pos, ori;
+            cout << "Insert the posistion coordinate: " << endl;
+            cin >> pos(0) >> pos(1) >> pos(2);
+            cout <<"Insert the orientation coordinate: " << endl;
+            cin >> ori(0) >> ori(1) >> ori(2);
+
+            cout <<"Choose the reference frame [0] world [1] end effector: " << endl;
+            int refFrame;
+            cin >> refFrame;
+
+            if(refFrame == 0) {
+                pos(2) += 0.01;
+                pos = transformationWorldToBase(pos);
+            }
+
+            computeMovementDifferential(pos, ori ,0.001,false); //compute the movement to the first brick in tavolo_brick.world
+        }else if(input==2){
+            EEPose eePose;
+            eePose = fwKin(currentJoint);
+            cout << "Current ee position: " << endl;
+            cout << eePose.Pe.transpose() << endl;
+        }else if(input == 3){
+            cout << "Current joint state: " << endl;
+            cout << currentJoint << endl;
+        }else if(input == 4){
+            if(HARD_GRIPPER){
+                float diameter;
+                Vector3f ee_joints = Vector3f::Ones(3);
+                cout << "Insert the value of the gripper joints:" << endl;
+                cin >> diameter;
+                changeHardGripper(diameter);
+            }else{
+                cout << "Insert the value of the gripper joints:" << endl;
+                float value,value2;
+                cin >> value >> value2;
+                changeSoftGripper(value,value2);
+            }
+        }else if(input == 5){
+            float height;
+            cout << "Insert the height of the movement:" << endl;
+            cin >> height;
+            moveUp(height);
+        }else if(input == 6){
+            float height;
+            cout << "Insert the height of the movement:" << endl;
+            cin >> height;
+            moveDown(height);
+        }else{
+            break;
+        }
+    }
+}
+
+/**
+ * @brief Compute the movement using the differential kinematics and relying on a straight line trajectory, with a velocity switching either for approach or for movement
  *
  * @param targetPosition 
  * @param targetOrientation 
  * @param dt
+ * @param approach
  */
-void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrientation,float dt){
+void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrientation,float dt, const bool& approach){
 
     /*calc initial end effector pose*/
     EEPose eePose;
@@ -183,6 +219,13 @@ void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrienta
     /*calc x0 and phie0*/
     Vector3f x0;
     x0 = eePose.Pe;
+
+    Vector3f positionDifference;
+    positionDifference = targetPosition - x0;
+    float distance = positionDifference.norm();
+    float movementTime;
+    if(approach) movementTime = distance / APPROACH_VELOCITY;
+    else movementTime = distance / MOVEMENT_VELOCITY;
 
     MatrixXf kp(3,3);
     kp = MatrixXf::Identity(3,3)*40;
@@ -202,14 +245,14 @@ void computeMovementDifferential(Vector3f targetPosition, Vector3f targetOrienta
 
     qk = currentJoint; //initialize qk
 
-    for(float t=dt; t<=MOVEMENT_TIME; t+=dt){
+    for(float t=dt; t<=movementTime; t+=dt){
 
         eePose1 = fwKin(qk);
         x = eePose1.Pe;
         re = eePose1.Re;
 
-        vd = (xe(t,targetPosition,x0)-xe(t-dt,targetPosition,x0)) / dt;
-        xArg = xe(t,targetPosition,x0);
+        vd = (xe(t,targetPosition,x0,movementTime)-xe(t-dt,targetPosition,x0,movementTime)) / dt;
+        xArg = xe(t,targetPosition,x0,movementTime);
 
         dotqk = invDiffKinematiControlComplete(qk,x,xArg,vd,re,targetOrientation,kp,kphi);
         qk1 = qk + dotqk.transpose()*dt; 
@@ -537,9 +580,9 @@ Vector3f mapToGripperJoints(float diameter){
  * @param xe0 initial position
  * @return Vector3f reprensenting the position
  */
-Vector3f xe(float t, Vector3f xef, Vector3f xe0){
+Vector3f xe(float t, Vector3f xef, Vector3f xe0, const float& movementTime){
     Vector3f x;
-    t = t / MOVEMENT_TIME;
+    t = t / movementTime;
     x = t * xef + (1-t) * xe0;
     return x;
 }
@@ -563,7 +606,7 @@ void coordinateCallback(const cpp_publisher::Coordinates::ConstPtr& coordinateMe
 
     //Adding 0.01 to the z coordinate to avoid collision with the table
     pos(2) = 0.92;
-    target(2) = 0.94;
+    target(2) = 0.92;
 
     cout << "Moving object from " << pos.transpose() << " to " << target.transpose() << endl;
 
@@ -595,18 +638,21 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     cout << "Moving above the block" << endl;
     Vector3f tmp = pos;
     tmp(2) -= 0.2;
-    computeMovementDifferential(tmp, ori, 0.001);
+    computeMovementDifferential(tmp, ori, 0.001,false);
     if(DEBUG)sleep(2);
 
     //moving in z
     cout << "Moving in z" << endl;
-    computeMovementDifferential(pos, ori, 0.001);
+    computeMovementDifferential(pos, ori, 0.001,true);
     if(DEBUG)sleep(2);
 
     // Grasping
     cout << "Grasping object" << endl;
     Vector3f gripperJoints;
     float diameter=60;
+    if(!REAL_ROBOT){
+        diameter = 40;
+    }
     changeHardGripper(diameter);
     sleep(1);
 
@@ -621,7 +667,7 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     tmp(0) = -0.4;
     tmp(1) = -0.4;
     tmp(2) = 0.5;
-    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
+    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001,false);
     if(DEBUG)sleep(2);
 
     //moving to the right check point to stay safe
@@ -629,19 +675,19 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     tmp(0) = 0.4;
     tmp(1) = -0.4;
     tmp(2) = 0.5;
-    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
+    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001,false);
     if(DEBUG)sleep(2);
 
     //moving in x,y
     tmp = targetPos;
     eePose = fwKin(currentJoint);
     tmp(2) = eePose.Pe(2);
-    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
+    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001,false);
     if(DEBUG)sleep(2);
 
     // Moving to target in z
     cout << "Moving to target" << endl;
-    computeMovementDifferential(targetPos, Vector3f::Zero(), 0.001);
+    computeMovementDifferential(targetPos, Vector3f::Zero(), 0.001,true);
     if(DEBUG)sleep(2);
 
     // Releasing
@@ -659,18 +705,17 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     Vector3f currentPos = eePose.Pe;
     if(currentPos(1)>-0.4){
         eePose.Pe(1) = -0.4;
-        computeMovementDifferential(eePose.Pe, Vector3f::Zero(), 0.001);
+        computeMovementDifferential(eePose.Pe, Vector3f::Zero(), 0.001,false);
     }
     if(DEBUG)sleep(2);
 
     // Moving back in the left of the table
     tmp = Vector3f(0.2, 0.8, 1.1);
     tmp = transformationWorldToBase(tmp);
-    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001);
+    computeMovementDifferential(tmp, Vector3f::Zero(), 0.001,false);
     moveUp(0.2);
     if(DEBUG)sleep(2);
     
-
 }
 
 /**
@@ -684,7 +729,7 @@ void moveUp(float distance){
     Vector3f target = eepose.Pe;
     target(2) -= distance;
 
-    computeMovementDifferential(target, eepose.Re.eulerAngles(2,1,0), 0.001);
+    computeMovementDifferential(target, eepose.Re.eulerAngles(2,1,0), 0.001,true);
 }
 
 /**
@@ -698,5 +743,5 @@ void moveDown(float distance){
     Vector3f target = eepose.Pe;
     target(2) += distance;
 
-    computeMovementDifferential(target, eepose.Re.eulerAngles(2,1,0), 0.001);
+    computeMovementDifferential(target, eepose.Re.eulerAngles(2,1,0), 0.001,true);
 }
