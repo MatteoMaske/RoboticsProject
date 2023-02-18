@@ -1,7 +1,0 @@
-Documentation of the robotics project for the course of Robotics at University of Trento.\hypertarget{index_intro}{}\doxysection{Introduction}\label{index_intro}
-The project consists in the development of a robotic system that is able to pick up blocks from a table and place them in a target zone. It is composed by three main nodes that communicate with each other\+:
-\begin{DoxyItemize}
-\item Vision node\+: it is responsible for detecting the blocks in the table using a yolo model and send their position to the planner node \mbox{\hyperlink{vision_8py}{Vision node}}
-\item Planner node\+: it is responsible for managing the tasks of the project, calculating the target zone for each block and sending the move order to the move node \mbox{\hyperlink{planner_8cpp}{Planner node}}
-\item Move node\+: it is responsible for moving the robot to the desired position and pick up or place the block \mbox{\hyperlink{move_8cpp}{Move node}} 
-\end{DoxyItemize}
