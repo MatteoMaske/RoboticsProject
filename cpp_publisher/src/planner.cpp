@@ -91,7 +91,9 @@ int main(int argc, char **argv)
             cout << "Enter block position" << endl;
             cin >> blockPos(0) >> blockPos(1) >> blockPos(2);
             int blockId = 1;
-            int blockClass = 1;
+            int blockClass;
+            cout << "Enter block class" << endl;
+            cin >> blockClass;
             if(isInWorkspace(blockPos))
                 sendMoveOrder(blockPos, blockClass, blockId);
         }
@@ -157,34 +159,34 @@ Vector3f getTargetZone(int blockClass){
     switch (blockClass)
     {
     case 0:
-        target << 0.9, 0.2, 0.9;
+        target << 0.9, 0.25, 0.9;
         break;
     case 1:
-        target << 0.9, 0.3, 0.9;
+        target << 0.9, 0.34, 0.9;
         break;
     case 2:
-        target << 0.9, 0.4, 0.9;
+        target << 0.9, 0.43, 0.9;
         break;
     case 3:
-        target << 0.9, 0.5, 0.9;
+        target << 0.9, 0.52, 0.9;
         break;
     case 4:
-        target << 0.9, 0.6, 0.9;
+        target << 0.9, 0.61, 0.9;
         break;
     case 5:
-        target << 0.8, 0.2, 0.9;
+        target << 0.8, 0.7, 0.9;
         break;
     case 6:
-        target << 0.8, 0.29, 0.9;
+        target << 0.8, 0.25, 0.9;
         break;
     case 7:
-        target << 0.8, 0.38, 0.9;
+        target << 0.8, 0.34, 0.9;
         break;
     case 8:
-        target << 0.8, 0.47, 0.9;
+        target << 0.8, 0.43, 0.9;
         break;
     case 9:
-        target << 0.8, 0.56, 0.9;
+        target << 0.8, 0.52, 0.9;
         break;
     case 10:
         target << 0.8, 0.65, 0.9;
