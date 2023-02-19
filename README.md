@@ -133,6 +133,7 @@ Than the node publishes the position of the blocks to the planner on the topic v
 only kinematics: https://youtu.be/OJr4BT6V9mw
 ## Simulation
 simulation 1: https://youtu.be/RLJN0ZxNJ58
+
 simulation 2: https://youtu.be/NN5zKzQndyM
 
 # Sources
