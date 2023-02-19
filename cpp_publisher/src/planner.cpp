@@ -38,7 +38,7 @@
 ///Set to 1 to test without vision
 #define DEBUG 1
 ///Number of different block classes
-#define BLOCK_CLASSES 10
+#define BLOCK_CLASSES 11
 
 using namespace std;
 using Eigen::Vector3f;
@@ -156,35 +156,38 @@ Vector3f getTargetZone(int blockClass){
 
     switch (blockClass)
     {
+    case 0:
+        target << 0.9, 0.2, 0.9;
+        break;
     case 1:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.9, 0.3, 0.9;
         break;
     case 2:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.9, 0.4, 0.9;
         break;
     case 3:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.9, 0.5, 0.9;
         break;
     case 4:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.9, 0.6, 0.9;
         break;
     case 5:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.2, 0.9;
         break;
     case 6:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.29, 0.9;
         break;
     case 7:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.38, 0.9;
         break;
     case 8:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.47, 0.9;
         break;
     case 9:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.56, 0.9;
         break;
     case 10:
-        target << 0.8, 0.5+offset, 0.9;
+        target << 0.8, 0.65, 0.9;
         break;
     }
 
