@@ -22,12 +22,12 @@ PLANNER_DETECTION_REQUEST_TOPIC = "/planner/detection_request"
 SLEEP_RATE = 10
 
 #Path to the weights used for YOLO
-WEIGHT = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/best1.pt'
+WEIGHT = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/bestm.pt'
 
 #Debug mode
 DEBUG = False
 #Set to true if is the real robot
-REAL_ROBOT = True
+REAL_ROBOT = False
 
 #Detection request sent by planner to enable the vision to publish
 if DEBUG:
