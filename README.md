@@ -2,12 +2,13 @@
 Introduction to robotics project 2022/2023
 
 # Authors
-@StefanoSacchet
+[@StefanoSacchet](https://github.com/StefanoSacchet)
 
-@MatteoMascherin
+[@MatteoMascherin](https://github.com/MatteoMaske)
 
-@AmirGheser
+[@AmirGheser](https://github.com/rogergheser)
 
+![](https://github.com/MatteoMaske/RoboticsProject/blob/main/videoRobot/real/realRobot.gif)
 
 # Description
 Project for the course of Introduction to Robotics, University of Trento 2022/2023
@@ -38,7 +39,7 @@ This project relies on the locosim repository (https://github.com/mfocchi/locosi
 
 ## Installation
 1. Clone the repository
-2. Clone the submodules, make sure you have locosim installed
+2. Clone the submodules, make sure you have installed
 locosim: https://github.com/mfocchi/locosim
 ```
 git submodule update --init --recursive
@@ -90,20 +91,26 @@ The rviz and gazebo simulation should start and the robot should start moving
 ### Preliminary steps and configuration
 
 ### Running the script
-1. Open another terminal and launch the ur5 script from locosim, we've used an alias to launch the script.
+1. Follow the steps in the locosim repository to install all drivers for the real robot
+2. Set all REAL_ROBOT flags for very node to True
+3. Open a terminal and launch the alias created following the steps in the locosim repository
+```
+robot_launch
+```
+4. Open another terminal and launch the ur5 script from locosim, we've used an alias to launch the script.
 Roscore isn't necessary as ur5 will launch it
 ```
 ur5
 ```
-2. Open another terminal and launch the move node
+5. Open another terminal and launch the move node
 ```
 rosrun cpp_publisher move
 ```
-3. Open another terminal and launch the planner
+6. Open another terminal and launch the planner
 ```
 rosrun cpp_publisher planner
 ```
-4. Open another terminal and launch the vision node
+7. Open another terminal and launch the vision node
 ```
 rosrun py_publisher vision
 ```
@@ -121,6 +128,14 @@ The vision node is responsible for detecting the blocks in the simulation, it's 
   * /ur5/zed_node/point_cloud/cloud_registered to recieve the point cloud from the camera and to calculate the 3D position of the block.
 
 Than the node publishes the position of the blocks to the planner on the topic vision/vision_detection.
+
+# Video demostration
+## Real robot
+only kinematics: https://youtu.be/OJr4BT6V9mw
+## Simulation
+simulation 1: https://youtu.be/RLJN0ZxNJ58
+
+simulation 2: https://youtu.be/NN5zKzQndyM
 
 # Sources
 -[Report](https://docs.google.com/document/u/2/d/e/2PACX-1vQiZPfs2Z4FkhYv-KPZE-VaQdFag_Jqy1Be6Zwl1rrErOfBeSZTSVxRmRH1eSXyPTvBu4t7OcXht-1Q/pub)

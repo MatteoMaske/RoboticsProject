@@ -1,3 +1,14 @@
+/**
+ * @file frame2frame.cpp
+ * @author Amir Gheser
+ * @brief File that contains the function to transform a point from the world frame to the base frame
+ * @version 1.0
+ * @date 2023-02-17
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <cmath>
 #include <iostream>
 #include <string>

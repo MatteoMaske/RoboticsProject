@@ -14,7 +14,6 @@ add_message_files(
   FILES
   Coordinates.msg
   BlockInfo.msg
-  BlockDetected.msg
   MoveOperation.msg
 )
 

@@ -1,3 +1,29 @@
+/**
+ * @mainpage
+ *
+ * Documentation of the robotics project for the course of Robotics at University of Trento.
+ * 
+ * @section intro Introduction
+ * 
+ * The project consists in the development of a robotic system that is able to pick up blocks from a table and place them in a target zone.
+ * It is composed by three main nodes that communicate with each other:
+ * - Vision node: it is responsible for detecting the blocks in the table using a yolo model and send their position to the planner node @ref vision.py "Vision node"
+ * - Planner node: it is responsible for managing the tasks of the project, calculating the target zone for each block and sending the move order to the move node @ref planner.cpp "Planner node"
+ * - Move node: it is responsible for moving the robot to the desired position and pick up or place the block @ref move.cpp "Move node"
+ * 
+*/
+
+/**
+ * @file planner.cpp
+ * @author Matteo Mascherin
+ * @brief File containing the planner node that manage all the tasks of the project communicating with the vision and move nodes
+ * @version 1.0
+ * @date 2023-02-17
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <iostream>
 #include <ros/ros.h>
 
@@ -9,22 +35,29 @@
 #include <Eigen/Dense>
 #include <vector>
 
-#define DEBUG 1 // Set to 1 to test without vision
-#define BLOCK_CLASSES 10 // Number of different block classes
+///Set to 1 to test without vision
+#define DEBUG 1
+///Number of different block classes
+#define BLOCK_CLASSES 11
 
 using namespace std;
 using Eigen::Vector3f;
 
+//=======GLOBAL VARIABLES=======
+///Publisher for sending move orders
+ros::Publisher movePublisher;
+///Publisher for sending detection requests
+ros::Publisher visionPublisher;
+///Vector containing the number of blocks of each class in the table to calculate the target zone offset
+vector<int> blockPerClass(BLOCK_CLASSES, 0);
+
+//=======FUNCTION DECLARATION=======
 void sendMoveOrder(Vector3f blockPos, int blockClass, int blockId); // Send move order to move node
 void visionCallback(const cpp_publisher::BlockInfo::ConstPtr& msg); // Callback for vision node
 void movementCallback(const cpp_publisher::MoveOperation::ConstPtr& msg); // Callback for move node
 
 Vector3f getTargetZone(int blockClass); // Get the target zone for a block of a given class
 bool isInWorkspace(Vector3f blockPos); // Check if a block is in the workspace
-
-ros::Publisher movePublisher; // Publisher for move node
-ros::Publisher visionPublisher; // Publisher for vision node
-vector<int> blockPerClass(BLOCK_CLASSES, 0); // Number of blocks of each class
 
 int main(int argc, char **argv)
 {
@@ -58,7 +91,9 @@ int main(int argc, char **argv)
             cout << "Enter block position" << endl;
             cin >> blockPos(0) >> blockPos(1) >> blockPos(2);
             int blockId = 1;
-            int blockClass = 1;
+            int blockClass;
+            cout << "Enter block class" << endl;
+            cin >> blockClass;
             if(isInWorkspace(blockPos))
                 sendMoveOrder(blockPos, blockClass, blockId);
         }
@@ -123,35 +158,38 @@ Vector3f getTargetZone(int blockClass){
 
     switch (blockClass)
     {
+    case 0:
+        target << 0.9, 0.25, 0.9;
+        break;
     case 1:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.9, 0.34, 0.9;
         break;
     case 2:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.9, 0.43, 0.9;
         break;
     case 3:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.9, 0.52, 0.9;
         break;
     case 4:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.9, 0.61, 0.9;
         break;
     case 5:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.7, 0.9;
         break;
     case 6:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.25, 0.9;
         break;
     case 7:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.34, 0.9;
         break;
     case 8:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.43, 0.9;
         break;
     case 9:
-        target << 0.9, 0.5+offset, 0.9;
+        target << 0.8, 0.52, 0.9;
         break;
     case 10:
-        target << 0.8, 0.5+offset, 0.9;
+        target << 0.8, 0.65, 0.9;
         break;
     }
 
