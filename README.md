@@ -1,5 +1,6 @@
 # RoboticsProject
 Introduction to robotics project 2022/2023
+![](https://github.com/MatteoMaske/RoboticsProject/blob/main/videoRobot/real/realRobot.gif)
 
 # Authors
 [@StefanoSacchet](https://github.com/StefanoSacchet)
@@ -9,7 +10,6 @@ Introduction to robotics project 2022/2023
 [@AmirGheser](https://github.com/rogergheser)
 
 
-![](https://github.com/MatteoMaske/RoboticsProject/blob/main/videoRobot/real/realRobot.gif)
 
 # Description
 Project for the course of Introduction to Robotics, University of Trento 2022/2023
