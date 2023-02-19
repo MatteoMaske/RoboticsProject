@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 
 from ultralytics import YOLO
 import cv2
@@ -27,7 +27,7 @@ WEIGHT = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/best1.pt'
 #Debug mode
 DEBUG = False
 #Set to true if is the real robot
-REAL_ROBOT = False
+REAL_ROBOT = True
 
 #Detection request sent by planner to enable the vision to publish
 if DEBUG:
@@ -36,7 +36,7 @@ else:
     detectionRequest = False
 
 #X limits of the blocks on the table
-MAX_X = 0.6
+MAX_X = 0.5
 #Z limits of the blocks on the table
 if REAL_ROBOT:
     MIN_Z = 0
@@ -59,7 +59,7 @@ pub = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10)
 
 """
 Function that publishes the message to the planner if it is subscribed
-@param msg: message to be published
+@param msg: message to publish to planner
 """
 def talker(msg):
     # rospy.init_node('publisher',anonymous=True)
@@ -77,6 +77,7 @@ def talker(msg):
 """
 Function that builds the custom message to be published
 @param block: dictionary with the block info
+@return msg: custom message to be published
 """
 def buildMsg(block):
 
@@ -92,12 +93,13 @@ def buildMsg(block):
 """
 Function that given a pointcloud and a list of blocks and their corresponding pixel, returns the coordinates of the blocks in the world frame
 Checks also if the point is on the table
-param msg: pointcloud message
-param list: list of dictionary of blocks with their corresponding pixel
+@param msg: pointcloud message
+@param list: list of dictionary of blocks with their corresponding pixel
+@return block: dictionary with block and it's corresponding coordinates in the world frame
 """
 def receivePointcloud(msg, list):
     points_list = [] #list of points in the camera frame
-    listCoord = {
+    block = {
         'id': list['id'],
         'class': list['class'],
         'x': 0,
@@ -116,7 +118,7 @@ def receivePointcloud(msg, list):
     base_offset = [0.5,0.35,1.75]
 
     if REAL_ROBOT:
-        x_c = [-0.9, 0.18, 0.49948]
+        x_c = [-0.9, 0.18, -0.35] #oldZ = 0.49948
         rotation = np.array([[0.86632, 0., 0.49948],
                              [0., 1., 0.],
                              [-0.49948, 0., 0.86632]])
@@ -132,21 +134,22 @@ def receivePointcloud(msg, list):
 
     #Check if the point is a NaN
     if not (math.isnan(pointW[0]) and math.isnan(pointW[1]) and math.isnan(pointW[2])):
-        listCoord['x'] = pointW[0]
-        listCoord['y'] = pointW[1]
-        listCoord['z'] = pointW[2]
+        block['x'] = pointW[0]
+        block['y'] = pointW[1]
+        block['z'] = pointW[2]
     else:
         print("Not a number")
 
     #Check if the point is on the table
-    if listCoord['z'] >= MIN_Z and listCoord['z'] <= MAX_Z and listCoord['x'] <= MAX_X:
-        return listCoord
+    if block['z'] >= MIN_Z and block['z'] <= MAX_Z and block['x'] <= MAX_X:
+        return block
     else:
         return None
 
 """
 Function that given a detection result returns the center of the bounding box drawn by YOLO and the class of the block
 @param result: detection result from YOLO
+@return info: dictionary with the center of the bounding box and the class of the block
 """
 def findCenter(result):
 
@@ -171,7 +174,8 @@ def findCenter(result):
 
 """
 Function that given an image calls YOLO to detect blocks than calls findCenter() and returns a list of blocks with their corresponding pixel
-@param image: image to be processed in cv2 format
+@param image: image to be processed, in cv2 format
+@return blockList: list of dictionary of blocks with their corresponding pixel
 """
 def detect(image):
     #Get weights
@@ -244,7 +248,7 @@ def callback(img, pointCloud):
             if block != None: #check z limits
                 blocklListCoord.append(block)
 
-        # print("listCoord:\n", listCoord)
+        # print("block:\n", block)
 
         #Keep only the nearest block to the camera
         if len(blocklListCoord) > 1: #If more than one block detected

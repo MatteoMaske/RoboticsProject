@@ -80,76 +80,230 @@ $(function() {
   <div class="headertitle"><div class="title">vision.py File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>File containing the vision node that manages the recognition of blocks and communicates with the planner node.</p>
+<!-- <a href="#details">More...</a></p> -->
+<div class="textblock"><code>from ultralytics import YOLO</code><br />
+<div class="textblock"><code>import numpy as np</code><br />
+<div class="textblock"><code>import rospy</code><br />
+<div class="textblock"><code>import sensor_msgs.msg</code><br />
+<div class="textblock"><code>from cv_bridge import CvBridge</code><br />
+<div class="textblock"><code>from py_publisher.msg import BlockInfo</code><br />
+<div class="textblock"><code>from std_msgs.msg import Byte, Int16, Bool</code><br />
+<div class="textblock"><code>from geometry_msgs.msg import Point</code><br />
+<div class="textblock"><code>from sensor_msgs.msg import PointCloud2</code><br />
+<div class="textblock"><code>from sensor_msgs import point_cloud2</code><br />
+<div class="textblock"><code>import math</code><br />
+<div class="textblock"><code>import message_filters</code><br />
+
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:namespacevision"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html">vision</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a3b62e19cd09115b4c8471aa9b17827d6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3b62e19cd09115b4c8471aa9b17827d6">vision.talker</a> (msg)</td></tr>
+<tr class="memitem:a3b62e19cd09115b4c8471aa9b17827d6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3b62e19cd09115b4c8471aa9b17827d6">talker</a> (msg)</td></tr>
+<tr class="memdesc:a93ab140e20d2c36255bac51afd37ee7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Publishes the message to the planner if it is subscribed.<br /></td></tr>
 <tr class="separator:a3b62e19cd09115b4c8471aa9b17827d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a63843da1390d71af57109b09557d3fe4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a63843da1390d71af57109b09557d3fe4">vision.buildMsg</a> (block)</td></tr>
+<tr class="memitem:a63843da1390d71af57109b09557d3fe4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a63843da1390d71af57109b09557d3fe4">buildMsg</a> (block)</td></tr>
+<tr class="memdesc:a93ab140e20d2c36255bac51afd37ee7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds the custom message to be published to planner.<br /></td></tr>
 <tr class="separator:a63843da1390d71af57109b09557d3fe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3992ad070533b1a3f1aa6d2db7983c87"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3992ad070533b1a3f1aa6d2db7983c87">vision.receivePointcloud</a> (msg, list)</td></tr>
+<tr class="memitem:a3992ad070533b1a3f1aa6d2db7983c87"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3992ad070533b1a3f1aa6d2db7983c87">receivePointcloud</a> (msg, list)</td></tr>
+<tr class="memdesc:a93ab140e20d2c36255bac51afd37ee7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a pointcloud and a list of blocks and their corresponding pixel, returns the coordinates of the blocks in the world frame. Checks also if the point is on the table.<br /></td></tr>
 <tr class="separator:a3992ad070533b1a3f1aa6d2db7983c87"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc9399ad9c6b29ea2b3269325f44cdab"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#abc9399ad9c6b29ea2b3269325f44cdab">vision.findCenter</a> (result)</td></tr>
+<tr class="memitem:abc9399ad9c6b29ea2b3269325f44cdab"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#abc9399ad9c6b29ea2b3269325f44cdab">findCenter</a> (result)</td></tr>
+<tr class="memdesc:a93ab140e20d2c36255bac51afd37ee7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a detection result from yolo returns the center of the bounding box drawn by YOLO and the class of the block.<br /></td></tr>
 <tr class="separator:abc9399ad9c6b29ea2b3269325f44cdab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0fc177a846f36a80ee6482bb383ddf8f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a0fc177a846f36a80ee6482bb383ddf8f">vision.detect</a> (image)</td></tr>
+<tr class="memitem:a0fc177a846f36a80ee6482bb383ddf8f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a0fc177a846f36a80ee6482bb383ddf8f">detect</a> (image)</td></tr>
+<tr class="memdesc:a93ab140e20d2c36255bac51afd37ee7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a cv2 image calls YOLO to detect blocks than calls findCenter() and returns a list of blocks with their corresponding pixel.<br /></td></tr>
 <tr class="separator:a0fc177a846f36a80ee6482bb383ddf8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54f6a051ede0aa111b99a806ebc61d9e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a54f6a051ede0aa111b99a806ebc61d9e">vision.callback</a> (img, pointCloud)</td></tr>
+<tr class="memitem:a54f6a051ede0aa111b99a806ebc61d9e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a54f6a051ede0aa111b99a806ebc61d9e">callback</a> (img, pointCloud)</td></tr>
+<tr class="memdesc:a93ab140e20d2c36255bac51afd37ee7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback of the zed image and point cloud subscriber that converts the image in cv2 format, crops it and calls detect() than receivePointcloud() than buildMsg() and finally publishes the message to the planner.<br /></td></tr>
 <tr class="separator:a54f6a051ede0aa111b99a806ebc61d9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7a33beb401ab31a2d801ea5bf7b44ddd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a7a33beb401ab31a2d801ea5bf7b44ddd">vision.listenerDetectionReq</a> (msg)</td></tr>
+<tr class="memitem:a7a33beb401ab31a2d801ea5bf7b44ddd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a7a33beb401ab31a2d801ea5bf7b44ddd">listenerDetectionReq</a> (msg)</td></tr>
+<tr class="memdesc:a93ab140e20d2c36255bac51afd37ee7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback of the planner detection request subscriber that sets the detectionRequest variable to True to enable the callback().<br /></td></tr>
 <tr class="separator:a7a33beb401ab31a2d801ea5bf7b44ddd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a4d3bb8c85f82353e7ac11b13ab67d706"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a4d3bb8c85f82353e7ac11b13ab67d706">vision.ZED_LEFT_TOPIC</a> = &quot;/ur5/zed_node/left/image_rect_color&quot;</td></tr>
+<tr class="memitem:a4d3bb8c85f82353e7ac11b13ab67d706"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a4d3bb8c85f82353e7ac11b13ab67d706">ZED_LEFT_TOPIC</a> = &quot;/ur5/zed_node/left/image_rect_color&quot;</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Topic of zed camera that publishes the rectified image.<br /></td></tr>
 <tr class="separator:a4d3bb8c85f82353e7ac11b13ab67d706"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ec626f85e59853624e42af86376f619"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3ec626f85e59853624e42af86376f619">vision.ZED_POINT_CLOUD_TOPIC</a> = &quot;/ur5/zed_node/point_cloud/cloud_registered&quot;</td></tr>
+<tr class="memitem:a3ec626f85e59853624e42af86376f619"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3ec626f85e59853624e42af86376f619">ZED_POINT_CLOUD_TOPIC</a> = &quot;/ur5/zed_node/point_cloud/cloud_registered&quot;</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Topic of zed camera that publishes the point_cloud.<br /></td></tr>
 <tr class="separator:a3ec626f85e59853624e42af86376f619"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61c3f9aac3c52ed93e95cb6d631d3984"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a61c3f9aac3c52ed93e95cb6d631d3984">vision.PLANNER_DETECTION_REQUEST_TOPIC</a> = &quot;/planner/detection_request&quot;</td></tr>
+<tr class="memitem:a61c3f9aac3c52ed93e95cb6d631d3984"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a61c3f9aac3c52ed93e95cb6d631d3984">PLANNER_DETECTION_REQUEST_TOPIC</a> = &quot;/planner/detection_request&quot;</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Topic where the vision publishes the nearest block detected to the planner.<br /></td></tr>
 <tr class="separator:a61c3f9aac3c52ed93e95cb6d631d3984"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0f050b4848a61c8adbd0314ffaf5e17"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#ab0f050b4848a61c8adbd0314ffaf5e17">vision.SLEEP_RATE</a> = 10</td></tr>
+<tr class="memitem:ab0f050b4848a61c8adbd0314ffaf5e17"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#ab0f050b4848a61c8adbd0314ffaf5e17">SLEEP_RATE</a> = 10</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frequency of node.<br /></td></tr>
 <tr class="separator:ab0f050b4848a61c8adbd0314ffaf5e17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a277e96282f2a3e65440f5b4910830113"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a277e96282f2a3e65440f5b4910830113">vision.WEIGHT</a> = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/best1.pt'</td></tr>
+<tr class="memitem:a277e96282f2a3e65440f5b4910830113"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a277e96282f2a3e65440f5b4910830113">WEIGHT</a> = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/best1.pt'</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Path to yolo weights used for detection.<br /></td></tr>
 <tr class="separator:a277e96282f2a3e65440f5b4910830113"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e2c4e79caf2a136d5221b84a09368bb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3e2c4e79caf2a136d5221b84a09368bb">vision.DEBUG</a> = False</td></tr>
+<tr class="memitem:a3e2c4e79caf2a136d5221b84a09368bb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3e2c4e79caf2a136d5221b84a09368bb">DEBUG</a> = False</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant used to enter debug mode.<br /></td></tr>
 <tr class="separator:a3e2c4e79caf2a136d5221b84a09368bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1be4423b6e358865ad1cc5ff386c10ff"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a1be4423b6e358865ad1cc5ff386c10ff">vision.REAL_ROBOT</a> = False</td></tr>
+<tr class="memitem:a1be4423b6e358865ad1cc5ff386c10ff"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a1be4423b6e358865ad1cc5ff386c10ff">REAL_ROBOT</a> = False</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant used to switch from real robot to simulation.<br /></td></tr>
 <tr class="separator:a1be4423b6e358865ad1cc5ff386c10ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afaf89ba7e0681efd6b23c02f53c1a1f6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#afaf89ba7e0681efd6b23c02f53c1a1f6">vision.detectionRequest</a> = True</td></tr>
-<tr class="separator:afaf89ba7e0681efd6b23c02f53c1a1f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacab888e23f25daa836ff22a9fc2c267"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#aacab888e23f25daa836ff22a9fc2c267">vision.else</a> :</td></tr>
+<tr class="memitem:afaf89ba7e0681efd6b23c02f53c1a1f6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#afaf89ba7e0681efd6b23c02f53c1a1f6">detectionRequest</a> = True</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Variable used to enable detection and publishing when the planner ask for it.<br /></td></tr>
 <tr class="separator:aacab888e23f25daa836ff22a9fc2c267"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab31cfac35ab3c0e6d7cc67dc8b982515"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#ab31cfac35ab3c0e6d7cc67dc8b982515">vision.MAX_X</a> = 0.6</td></tr>
+<tr class="memitem:ab31cfac35ab3c0e6d7cc67dc8b982515"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#ab31cfac35ab3c0e6d7cc67dc8b982515">MAX_X</a> = 0.6</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant that saves max X values for block detection.<br /></td></tr>
 <tr class="separator:ab31cfac35ab3c0e6d7cc67dc8b982515"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af22f46c285978f241a44c0df9dc7a5be"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#af22f46c285978f241a44c0df9dc7a5be">vision.MIN_Z</a> = 0</td></tr>
+<tr class="memitem:af22f46c285978f241a44c0df9dc7a5be"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#af22f46c285978f241a44c0df9dc7a5be">MIN_Z</a> = 0</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant that saves min Z values for block detection.<br /></td></tr>
 <tr class="separator:af22f46c285978f241a44c0df9dc7a5be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b76b1304df094421db0ec61ae0fda2f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3b76b1304df094421db0ec61ae0fda2f">vision.MAX_Z</a> = 2</td></tr>
+<tr class="memitem:a3b76b1304df094421db0ec61ae0fda2f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a3b76b1304df094421db0ec61ae0fda2f">MAX_Z</a> = 2</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constant that saves max Z values for block detection.<br /></td></tr>
 <tr class="separator:a3b76b1304df094421db0ec61ae0fda2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64cdc980c8ab3e680b6e438df8d0cfd2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a64cdc980c8ab3e680b6e438df8d0cfd2">vision.CROP_HEIGHT</a> = 100</td></tr>
+<tr class="memitem:a64cdc980c8ab3e680b6e438df8d0cfd2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a64cdc980c8ab3e680b6e438df8d0cfd2">CROP_HEIGHT</a> = 100</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pixels to crop in height on zed image.<br /></td></tr>
 <tr class="separator:a64cdc980c8ab3e680b6e438df8d0cfd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a524c405b6b10cd7c5fc809e79e6258"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a0a524c405b6b10cd7c5fc809e79e6258">vision.CROP_WIDTH</a> = 200</td></tr>
-<tr class="separator:a0a524c405b6b10cd7c5fc809e79e6258"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a2968c4c1566ce762a936acf0dc56cf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a4a2968c4c1566ce762a936acf0dc56cf">vision.anonymous</a></td></tr>
+<tr class="memitem:a0a524c405b6b10cd7c5fc809e79e6258"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a0a524c405b6b10cd7c5fc809e79e6258">CROP_WIDTH</a> = 200</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pixels to crop in widith on zed image.<br /></td></tr>
 <tr class="separator:a4a2968c4c1566ce762a936acf0dc56cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5873531f108ff470c84f043812cf5cf"><td class="memItemLeft" align="right" valign="top">rospy&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#ae5873531f108ff470c84f043812cf5cf">vision.pub</a> = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10)</td></tr>
+<tr class="memitem:ae5873531f108ff470c84f043812cf5cf"><td class="memItemLeft" align="right" valign="top">rospy&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#ae5873531f108ff470c84f043812cf5cf">pub</a> = rospy.Publisher('vision/vision_detection', BlockInfo, queue_size=10)</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create publisher node.<br /></td></tr>
 <tr class="separator:ae5873531f108ff470c84f043812cf5cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c438ab600f8b38f515cb14e7bb1c8ef"><td class="memItemLeft" align="right" valign="top">message_filters&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a8c438ab600f8b38f515cb14e7bb1c8ef">vision.imageSub</a> = message_filters.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image)</td></tr>
+<tr class="memitem:a8c438ab600f8b38f515cb14e7bb1c8ef"><td class="memItemLeft" align="right" valign="top">message_filters&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a8c438ab600f8b38f515cb14e7bb1c8ef">imageSub</a> = message_filters.Subscriber(ZED_LEFT_TOPIC, sensor_msgs.msg.Image)</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Subscribe to zed image topic.<br /></td></tr>
 <tr class="separator:a8c438ab600f8b38f515cb14e7bb1c8ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53c2dca6dc6250a29e9db0b21b6db7a0"><td class="memItemLeft" align="right" valign="top">message_filters&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a53c2dca6dc6250a29e9db0b21b6db7a0">vision.pointCloudSub</a> = message_filters.Subscriber(ZED_POINT_CLOUD_TOPIC, PointCloud2)</td></tr>
+<tr class="memitem:a53c2dca6dc6250a29e9db0b21b6db7a0"><td class="memItemLeft" align="right" valign="top">message_filters&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a53c2dca6dc6250a29e9db0b21b6db7a0">pointCloudSub</a> = message_filters.Subscriber(ZED_POINT_CLOUD_TOPIC, PointCloud2)</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Subscribe to zed point cloud.<br /></td></tr>
 <tr class="separator:a53c2dca6dc6250a29e9db0b21b6db7a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fc9d14ae71495e269185dd62fc2670e"><td class="memItemLeft" align="right" valign="top">message_filters&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a2fc9d14ae71495e269185dd62fc2670e">vision.ts</a> = message_filters.TimeSynchronizer([imageSub, pointCloudSub], 1)</td></tr>
+<tr class="memitem:a2fc9d14ae71495e269185dd62fc2670e"><td class="memItemLeft" align="right" valign="top">message_filters&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a2fc9d14ae71495e269185dd62fc2670e">ts</a> = message_filters.TimeSynchronizer([imageSub, pointCloudSub], 1)</td></tr>
+<tr class="memdesc:ad26ca170c3f6856dbf87f176e9244166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Synchronize the two callbacks from the zed.<br /></td></tr>
 <tr class="separator:a2fc9d14ae71495e269185dd62fc2670e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9486f63106753f408821cc63a062732"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#ad9486f63106753f408821cc63a062732">vision.Bool</a></td></tr>
-<tr class="separator:ad9486f63106753f408821cc63a062732"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a570e160e8288d186d955d4ade7559bfb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#a570e160e8288d186d955d4ade7559bfb">vision.listenerDetectionReq</a></td></tr>
-<tr class="separator:a570e160e8288d186d955d4ade7559bfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8cfb62091ccd401f82de73ebb36d506"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevision.html#ac8cfb62091ccd401f82de73ebb36d506">vision.queue_size</a></td></tr>
-<tr class="separator:ac8cfb62091ccd401f82de73ebb36d506"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>File containing the vision node that manages the recognition of blocks and communicates with the planner node.</p>
+<dl class="section author"><dt>Author</dt><dd>Stefano Sacchet</dd></dl>
+<dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
+<dl class="section date"><dt>Date</dt><dd>2023-02-18</dd></dl>
+<dl class="section copyright"><dt>Copyright</dt><dd>Copyright (c) 2023 </dd></dl>
+
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="abacaf307aa8ae179849cc21b90b1d031" name="abacaf307aa8ae179849cc21b90b1d031"></a>
+
+<h2 class="memtitle"><span class="permalink"><a href="#abacaf307aa8ae179849cc21b90b1d031">&#9670;&#160;</a></span>talker(msg)</h2>
+<div class="memitem">
+  <div class="memproto">
+        <table class="memname">
+          <tr>
+            <td class="memname">def talker(msg)</td>
+          </tr>
+        </table>
+  </div><div class="memdoc">
+<p>Publishes the message to the planner if it is subscribed.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">msg: message to publish to planner</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+</div>
+
+<h2 class="memtitle"><span class="permalink"><a href="#abacaf307aa8ae179849cc21b90b1d031">&#9670;&#160;</a></span>buildMsg(block)</h2>
+<div class="memitem">
+  <div class="memproto">
+        <table class="memname">
+          <tr>
+            <td class="memname">def buildMsg(block)</td>
+          </tr>
+        </table>
+  </div><div class="memdoc">
+<p>Builds the custom message to be published to planner.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">block: dictionary with the block info</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>msg: custom message to be published</dd></dl>
+</div>
+
+<h2 class="memtitle"><span class="permalink"><a href="#abacaf307aa8ae179849cc21b90b1d031">&#9670;&#160;</a></span>receivePointcloud(msg, list)</h2>
+<div class="memitem">
+  <div class="memproto">
+        <table class="memname">
+          <tr>
+            <td class="memname">def receivePointcloud(msg, list)</td>
+          </tr>
+        </table>
+  </div><div class="memdoc">
+<p>Given a pointcloud and a list of blocks and their corresponding pixel, returns the coordinates of the blocks in the world frame. Checks also if the point is on the table.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">msg: pointcloud message</td><td></td></tr>
+  </table>
+  <table class="params">
+    <tr><td class="paramname">list: list of dictionary of blocks with their corresponding pixel</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>block: dictionary with block and it's corresponding coordinates in the world frame</dd></dl>
+</div>
+
+<h2 class="memtitle"><span class="permalink"><a href="#abacaf307aa8ae179849cc21b90b1d031">&#9670;&#160;</a></span>findCenter(result)</h2>
+<div class="memitem">
+  <div class="memproto">
+        <table class="memname">
+          <tr>
+            <td class="memname">def findCenter(result)</td>
+          </tr>
+        </table>
+  </div><div class="memdoc">
+<p>Given a detection result from yolo returns the center of the bounding box drawn by YOLO and the class of the block.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">result: detection result from YOLO</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>info: dictionary with the center of the bounding box and the class of the block</dd></dl>
+</div>
+
+<h2 class="memtitle"><span class="permalink"><a href="#abacaf307aa8ae179849cc21b90b1d031">&#9670;&#160;</a></span>detect(image)</h2>
+<div class="memitem">
+  <div class="memproto">
+        <table class="memname">
+          <tr>
+            <td class="memname">def detect(image)</td>
+          </tr>
+        </table>
+  </div><div class="memdoc">
+<p>Given a cv2 image calls YOLO to detect blocks than calls findCenter() and returns a list of blocks with their corresponding pixel.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">image:image to be processed, in cv2 format</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>blockList: list of dictionary of blocks with their corresponding pixel</dd></dl>
+</div>
+
+<h2 class="memtitle"><span class="permalink"><a href="#abacaf307aa8ae179849cc21b90b1d031">&#9670;&#160;</a></span>callback(img, pointCLoud)</h2>
+<div class="memitem">
+  <div class="memproto">
+        <table class="memname">
+          <tr>
+            <td class="memname">def callback(img, pointCloud)</td>
+          </tr>
+        </table>
+  </div><div class="memdoc">
+<p>Callback of the zed image and point cloud subscriber that converts the image in cv2 format, crops it and calls detect() than receivePointcloud() than buildMsg() and finally publishes the message to the planner.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">img: image from the zed camera</td><td></td></tr>
+  </table>
+  <table class="params">
+    <tr><td class="paramname">pointCloud: point_cloud from the zed camera</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+</div>
+
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
