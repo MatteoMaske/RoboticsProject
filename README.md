@@ -2,11 +2,11 @@
 Introduction to robotics project 2022/2023
 
 # Authors
-@StefanoSacchet
+[@StefanoSacchet](https://github.com/StefanoSacchet)
 
-@MatteoMascherin
+[@MatteoMascherin](https://github.com/MatteoMaske)
 
-@AmirGheser
+[@AmirGheser](https://github.com/rogergheser)
 
 
 # Description
