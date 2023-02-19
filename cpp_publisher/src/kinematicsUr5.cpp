@@ -1,3 +1,14 @@
+/**
+ * @file kinematicsUr5.cpp
+ * @author Stefano Sacchet
+ * @brief File containing the functions to calculate the forward and inverse kinematics of the UR5 robot
+ * @version 1.0
+ * @date 2023-02-17
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <iostream>
 #include <Eigen/Dense>
 #include <cmath>
@@ -7,8 +18,14 @@ using namespace std;
 using Eigen::MatrixXf;
 
 //distance vectors
+///Length of the common normal between the z-axes of consecutive joints following the Denavit-Hartenberg convention
 const float A[6] = {0, -0.425, -0.3922, 0, 0, 0};
+///Distance between the z-axes of consecutive joints following the Denavit-Hartenberg convention
 const float D[6] = {0.1625, 0, 0, 0.1333, 0.0997, 0.0996+0.14};
+/**
+ * @brief Struct to store the position and orientation of the end effector
+ * 
+ */
 struct EEPose{
     Eigen::Vector3f Pe;
     Eigen::Matrix3f Re;
@@ -24,27 +41,6 @@ MatrixXf calcA32(float th2);
 MatrixXf calcA43(float th3);
 MatrixXf calcA54(float th4);
 MatrixXf calcA65(float th5);
-
-/*int main(int argc, char** argv){
-    cout.setf(ios::fixed);
-
-    //float Th[6] = {1.6, 0.2, -0.5, 2.89, 1.1, 1.25};
-    MatrixXf Th(1,6); Th << 1.6, 0.2, -0.5, 2.89, 1.1, 1.25;
-    MatrixXf ThInv(8,6);
-    EEPose eePose; EEPose eePose1;
-
-    eePose = fwKin(Th); //calculates forward kinematics
-    ThInv = invKin(eePose); //calculates inverse kinematics
-
-    cout << "The end effector is at: " << eePose.Pe(0) << ", " << eePose.Pe(1) << ", " << eePose.Pe(2) << endl;
-
-    // for(int i=0; i<8; i++){
-    //     eePose1 = fwKin(ThInv.row(i));
-    //     cout << "pe[" << i << "]: " << setprecision(2) << (eePose1.Pe - eePose.Pe) << ", Re[" << i << "]: " << setprecision(6) << (eePose1.Re - eePose.Re) << endl;
-    // }
-
-    return 0;
-}*/
 
 MatrixXf calcA10(float Th0){
     MatrixXf A10(4,4);
@@ -111,7 +107,12 @@ MatrixXf calcA65(float Th5){
 
     return A65;
 }
-
+/**
+ * @brief This function will calculate the forward kinematics of the robot and return the position of the end effector
+ * 
+ * @param Th 
+ * @return EEPose 
+ */
 EEPose fwKin(MatrixXf Th){
 
     MatrixXf A60(4, 4);
@@ -123,10 +124,6 @@ EEPose fwKin(MatrixXf Th){
     Pe = A60.block(0,3,3,1);
     Re = A60.block(0,0,3,3);
 
-    // cout << "A60: " << A60 << endl;
-    // cout << "Pe: " << endl << Pe << endl;
-    // cout << "Re: " << endl << Re << endl;
-
     EEPose eePose;
     eePose.Pe = Pe;
     eePose.Re = Re;
@@ -134,6 +131,12 @@ EEPose fwKin(MatrixXf Th){
     return eePose;
 }
 
+/**
+ * @brief This function will calculate the inverse kinematics of the robot and return the 8 possible joint configurations
+ * 
+ * @param eePose 
+ * @return MatrixXf 
+ */
 MatrixXf invKin(EEPose eePose){
 
     MatrixXf Re = eePose.Re;
@@ -160,8 +163,6 @@ MatrixXf invKin(EEPose eePose){
     complex<float> th5_2 = real(-acos((endEffectorPos[0] * sin(th1_1) - endEffectorPos[1] * cos(th1_1) - D[3]) / D[5]));
     complex<float> th5_3 = real(acos((endEffectorPos[0] * sin(th1_2) - endEffectorPos[1] * cos(th1_2) - D[3]) / D[5]));
     complex<float> th5_4 = real(-acos((endEffectorPos[0] * sin(th1_2) - endEffectorPos[1] * cos(th1_2) - D[3]) / D[5]));
-
-
 
     //Computation values for th6
     // related to th11 a th51
