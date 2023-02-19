@@ -129,7 +129,11 @@ The vision node is responsible for detecting the blocks in the simulation, it's 
 Than the node publishes the position of the blocks to the planner on the topic vision/vision_detection.
 
 # Video demostration
+## Real robot
 only kinematics: https://youtu.be/OJr4BT6V9mw
+## Simulation
+simulation 1: https://youtu.be/RLJN0ZxNJ58
+simulation 2: https://youtu.be/NN5zKzQndyM
 
 # Sources
 -[Report](https://docs.google.com/document/u/2/d/e/2PACX-1vQiZPfs2Z4FkhYv-KPZE-VaQdFag_Jqy1Be6Zwl1rrErOfBeSZTSVxRmRH1eSXyPTvBu4t7OcXht-1Q/pub)
