@@ -86,7 +86,7 @@ rosrun cpp_publisher planner
 ```
 rosrun py_publisher vision
 ```
-The rviz and gazebo simulation should start and the robot should start moving
+The rviz and gazebo simulation should start and the robot start moving. You can run the script run.sh instead of points from 2 to 4.
 
 ## Launch on the real robot
 ### Preliminary steps and configuration
