@@ -23,7 +23,7 @@ SLEEP_RATE = 10
 
 #Path to the weights used for YOLO
 WEIGHT = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/bestm.pt'
-
+WEIGHT1 = '/home/laboratorio/row_ws/src/roboticsProject/py_publisher/src/bestm.pt'
 #Debug mode
 DEBUG = False
 #Set to true if is the real robot
@@ -179,12 +179,15 @@ Function that given an image calls YOLO to detect blocks than calls findCenter()
 """
 def detect(image):
     #Get weights
-    model = YOLO(WEIGHT)
+    if REAL_ROBOT:
+        model = YOLO(WEIGHT1)
+    else:
+        model = YOLO(WEIGHT)
 
-    # if REAL_ROBOT:
-    #     #Convert image from 4 to 3 channels
-    #     b, g, r, a = cv2.split(image)
-    #     image = cv2.merge((b, g, r))
+    if REAL_ROBOT:
+        #Convert image from 4 to 3 channels
+        b, g, r, a = cv2.split(image)
+        image = cv2.merge((b, g, r))
 
     #Get image shape
     _, width, _ = image.shape
