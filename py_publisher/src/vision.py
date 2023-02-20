@@ -21,13 +21,17 @@ PLANNER_DETECTION_REQUEST_TOPIC = "/planner/detection_request"
 
 SLEEP_RATE = 10
 
-#Path to the weights used for YOLO
-WEIGHT = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/bestm.pt'
-WEIGHT1 = '/home/laboratorio/row_ws/src/roboticsProject/py_publisher/src/bestm.pt'
 #Debug mode
 DEBUG = False
 #Set to true if is the real robot
 REAL_ROBOT = False
+
+#Path to the weights used for YOLO
+if REAL_ROBOT:
+    WEIGHT = '/home/laboratorio/row_ws/src/roboticsProject/py_publisher/src/bestm.pt'
+else:
+    WEIGHT = '/home/stefano/ros_ws/src/roboticsProject/py_publisher/src/bestm.pt'
+
 
 #Detection request sent by planner to enable the vision to publish
 if DEBUG:
@@ -38,10 +42,12 @@ else:
 #X limits of the blocks on the table
 MAX_X = 0.5
 MIN_X = 0.05
+MIN_Y = 0.2
+MAX_Y = 0.8
 #Z limits of the blocks on the table
 if REAL_ROBOT:
-    MIN_Z = 0
-    MAX_Z = 2
+    MIN_Z = 0.9
+    MAX_Z = 1.3
 else:
     MIN_Z = 0.88
     MAX_Z = 0.92
@@ -109,8 +115,8 @@ def receivePointcloud(msg, list):
     }
 
     #Add the cropped pixels to match the pointcloud
-    x = list['x'] + CROP_WIDTH
-    y = list['y'] + CROP_HEIGHT
+    x = list['x']# + CROP_WIDTH
+    y = list['y']# + CROP_HEIGHT
 
     for data in point_cloud2.read_points(msg, field_names=['x','y','z'], skip_nans=False, uvs=[(x, y)]):
         points_list.append([data[0], data[1], data[2]]) #coordinates in the camera frame
@@ -135,14 +141,19 @@ def receivePointcloud(msg, list):
 
     #Check if the point is a NaN
     if not (math.isnan(pointW[0]) and math.isnan(pointW[1]) and math.isnan(pointW[2])):
-        block['x'] = pointW[0] - 0.02
-        block['y'] = pointW[1]
-        block['z'] = pointW[2]
+        if REAL_ROBOT:
+            block['x'] = pointW[0] - 0.015 #Calibration fixing
+            block['y'] = pointW[1] - 0.02
+            block['z'] = pointW[2]
+        else:
+            block['x'] = pointW[0] - 0.02
+            block['y'] = pointW[1]
+            block['z'] = pointW[2]
     else:
         print("Not a number")
 
     #Check if the point is on the table
-    if block['z'] >= MIN_Z and block['z'] <= MAX_Z and block['x'] >= MIN_X and block['x'] <= MAX_X:
+    if block['z'] >= MIN_Z and block['z'] <= MAX_Z and block['x'] >= MIN_X and block['x'] <= MAX_X and block['y'] > MIN_Y and block['y'] < MAX_Y:
         return block
     else:
         return None
@@ -180,10 +191,7 @@ Function that given an image calls YOLO to detect blocks than calls findCenter()
 """
 def detect(image):
     #Get weights
-    if REAL_ROBOT:
-        model = YOLO(WEIGHT1)
-    else:
-        model = YOLO(WEIGHT)
+    model = YOLO(WEIGHT)
 
     if REAL_ROBOT:
         #Convert image from 4 to 3 channels
@@ -229,9 +237,12 @@ def callback(img, pointCloud):
         image = bridge.imgmsg_to_cv2(img, desired_encoding='passthrough')
 
         #Cropping the image
-        height, width, _ = image.shape
-        croppedImage = image[CROP_HEIGHT:height, CROP_WIDTH:width]
-        croppedImage = np.ascontiguousarray(croppedImage)
+        croppedImage = image
+        if not REAL_ROBOT:
+            height, width, _ = image.shape
+            croppedImage = image[CROP_HEIGHT:height, CROP_WIDTH:width]
+            croppedImage = np.ascontiguousarray(croppedImage)
+        
         #Display cropped image
         # cv2.imshow("cropped", croppedImage)
         # cv2.waitKey(0)
