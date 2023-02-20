@@ -110,6 +110,9 @@ int main(int argc, char **argv){
         currentGripper << 0.0, 0.0, 0.0;
     }else currentGripper.resize(1,2);
 
+    initialGripperDiameter = 130.0;
+    changeHardGripper(initialGrpperDiameter);
+
     //ros::spin() in order to wait for the planner to send the coordinates
     if(!MANUAL_CONTROL){
         while(ros::ok()){
@@ -654,7 +657,7 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
         diameter = 40;
     }
     changeHardGripper(diameter);
-    sleep(1);
+    sleep(2);
 
     //moving in z
     cout << "Moving in z" << endl;
@@ -693,7 +696,7 @@ void moveObject(Vector3f pos, Vector3f ori, Vector3f targetPos){
     // Releasing
     cout << "Releasing object" << endl;
     changeHardGripper(100);
-    sleep(1);
+    sleep(2);
 
     // Moving up
     cout << "Moving up" << endl;
