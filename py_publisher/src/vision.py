@@ -37,6 +37,7 @@ else:
 
 #X limits of the blocks on the table
 MAX_X = 0.5
+MIN_X = 0.05
 #Z limits of the blocks on the table
 if REAL_ROBOT:
     MIN_Z = 0
@@ -134,14 +135,14 @@ def receivePointcloud(msg, list):
 
     #Check if the point is a NaN
     if not (math.isnan(pointW[0]) and math.isnan(pointW[1]) and math.isnan(pointW[2])):
-        block['x'] = pointW[0]
+        block['x'] = pointW[0] - 0.02
         block['y'] = pointW[1]
         block['z'] = pointW[2]
     else:
         print("Not a number")
 
     #Check if the point is on the table
-    if block['z'] >= MIN_Z and block['z'] <= MAX_Z and block['x'] <= MAX_X:
+    if block['z'] >= MIN_Z and block['z'] <= MAX_Z and block['x'] >= MIN_X and block['x'] <= MAX_X:
         return block
     else:
         return None
@@ -240,7 +241,7 @@ def callback(img, pointCloud):
 
         # print("List:\n", list)
         # for i in range(len(list)):
-        #     image = cv2.circle(image, (list[i]['x'] + CROP_WIDTH, list[i]['y'] + CROP_HEIGHT), 5, (0, 0, 255), -1)
+        #     image = cv2.circle(image, (blockList[i]['x'] + CROP_WIDTH, blockList[i]['y'] + CROP_HEIGHT), 5, (0, 0, 255), -1)
         # cv2.imshow("image", image)
         # cv2.waitKey(0)
 
