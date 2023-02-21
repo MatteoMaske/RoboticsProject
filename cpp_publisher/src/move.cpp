@@ -110,8 +110,8 @@ int main(int argc, char **argv){
         currentGripper << 0.0, 0.0, 0.0;
     }else currentGripper.resize(1,2);
 
-    initialGripperDiameter = 130.0;
-    changeHardGripper(initialGrpperDiameter);
+    float initialGripperDiameter = 130.0;
+    changeHardGripper(initialGripperDiameter);
 
     //ros::spin() in order to wait for the planner to send the coordinates
     if(!MANUAL_CONTROL){
