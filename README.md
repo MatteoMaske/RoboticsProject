@@ -143,7 +143,7 @@ Than the node publishes the position of the blocks to the planner on the topic v
 [simulation 2](https://youtu.be/NN5zKzQndyM)
 
 # Sources
--[Report](https://docs.google.com/document/u/2/d/e/2PACX-1vQiZPfs2Z4FkhYv-KPZE-VaQdFag_Jqy1Be6Zwl1rrErOfBeSZTSVxRmRH1eSXyPTvBu4t7OcXht-1Q/pub)
+-[Report](https://github.com/MatteoMaske/RoboticsProject/blob/5a25d20a0bb84b38efa4c063392d96eb3241bb93/Report.pdf)
 
 -[YOLOv8](https://github.com/ultralytics/ultralytics)
 
