@@ -174,7 +174,7 @@ Vector3f getTargetZone(int blockClass){
         target << 0.9, 0.61, 0.9;
         break;
     case 5:
-        target << 0.8, 0.7, 0.9;
+        target << 0.9, 0.7, 0.9;
         break;
     case 6:
         target << 0.8, 0.25, 0.9;

@@ -115,8 +115,8 @@ def receivePointcloud(msg, list):
     }
 
     #Add the cropped pixels to match the pointcloud
-    x = list['x']# + CROP_WIDTH
-    y = list['y']# + CROP_HEIGHT
+    x = list['x'] + CROP_WIDTH
+    y = list['y'] + CROP_HEIGHT
 
     for data in point_cloud2.read_points(msg, field_names=['x','y','z'], skip_nans=False, uvs=[(x, y)]):
         points_list.append([data[0], data[1], data[2]]) #coordinates in the camera frame
@@ -237,11 +237,9 @@ def callback(img, pointCloud):
         image = bridge.imgmsg_to_cv2(img, desired_encoding='passthrough')
 
         #Cropping the image
-        croppedImage = image
-        if not REAL_ROBOT:
-            height, width, _ = image.shape
-            croppedImage = image[CROP_HEIGHT:height, CROP_WIDTH:width]
-            croppedImage = np.ascontiguousarray(croppedImage)
+        height, width, _ = image.shape
+        croppedImage = image[CROP_HEIGHT:height, CROP_WIDTH:width]
+        croppedImage = np.ascontiguousarray(croppedImage)
         
         #Display cropped image
         # cv2.imshow("cropped", croppedImage)
