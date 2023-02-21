@@ -132,11 +132,11 @@ Than the node publishes the position of the blocks to the planner on the topic v
 
 # Video demostration
 ## Real robot
-[only kinematics](https://youtu.be/OJr4BT6V9mw)
+[only kinematics](https://youtu.be/yzQzuTc_66c)
 
-[realRobot 1](https://youtu.be/xBX46SAh86o)
+[realRobot 1](https://youtu.be/G-Yc33Wr_PY)
 
-[realRobot 2](https://youtu.be/aLgjkXgn5Rc)
+[realRobot 2](https://youtu.be/MrrBdqbE7V0)
 ## Simulation
 [simulation 1](https://youtu.be/RLJN0ZxNJ58)
 
