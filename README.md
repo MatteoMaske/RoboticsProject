@@ -41,7 +41,7 @@ This project relies on the [locosim repository](https://github.com/mfocchi/locos
 ## Installation
 1. Clone the repository
 2. Clone the submodules, make sure you have installed
-locosim: https://github.com/mfocchi/locosim
+[locosim](https://github.com/mfocchi/locosim):
 ```
 git submodule update --init --recursive
 ```
